@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="teal-hangat">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin BK SMP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Penyesuaian tata letak khusus panel admin */
+    .admin-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .admin-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .row-eskalasi td {
+      background-color: #fff1f2;
+    }
+    .row-eskalasi:hover td {
+      background-color: #ffe4e6;
+    }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+    }
+    @media (min-width: 680px) {
+      .form-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .item-editor-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 1rem;
+      background-color: #f8fafc;
+      margin-bottom: 0.85rem;
+    }
+    .item-editor-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .img-preview-box {
+      width: 72px;
+      height: 72px;
+      border-radius: 12px;
+      border: 1px dashed #94a3b8;
+      background-color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .img-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .banner-preview-box {
+      width: 100%;
+      max-width: 360px;
+      height: 100px;
+      border-radius: 12px;
+      border: 1px dashed #94a3b8;
+      background-color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .banner-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .checkbox-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 44px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .checkbox-inline input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+    .login-wrapper {
+      max-width: 440px;
+      margin: 2.5rem auto;
+      padding: 0 1rem;
+    }
+  </style>
+</head>
+<body class="admin-mode">
+  <!-- =======================================================================
+       1. LAYAR LOGIN ADMIN
+       ======================================================================= -->
+  <div id="admin-login-screen" class="login-wrapper">
+    <div class="card">
+      <div style="text-align: center; margin-bottom: 1.25rem;">
+        <div class="brand-logo" style="margin: 0 auto 0.75rem; width: 52px; height: 52px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <h1 class="section-title" style="font-size: 1.35rem;">Panel Guru BK</h1>
+        <p class="section-desc" style="margin-bottom: 0;">Masuk menggunakan kata sandi pengelola untuk melihat kiriman siswa dan mengatur layanan.</p>
+      </div>
+
+      <form id="form-admin-login" novalidate>
+        <div class="form-group">
+          <label for="input-admin-password" class="form-label">Kata Sandi Admin</label>
+          <input
+            type="password"
+            id="input-admin-password"
+            class="form-control"
+            placeholder="Masukkan kata sandi admin"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <div id="login-error-box" class="alert-box alert-danger hidden" role="alert"></div>
+
+        <button type="submit" id="btn-admin-login" class="btn btn-primary btn-block">Masuk ke Panel BK</button>
+      </form>
+
+      <div style="margin-top: 1.15rem; text-align: center;">
+        <a href="index.html" style="font-size: 0.9rem; color: var(--primary); font-weight: 700; text-decoration: none;">
+          &larr; Kembali ke Halaman Siswa
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       2. APLIKASI UTAMA ADMIN (TERPROTEKSI TOKEN SERVER)
+       ======================================================================= -->
+  <div id="admin-app-shell" class="hidden">
+    <header class="site-header">
+      <div class="header-inner admin-topbar" style="max-width: 1200px;">
+        <div class="brand">
+          <div class="brand-logo" id="admin-brand-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title" id="admin-header-title">Panel Admin BK</span>
+            <span class="brand-subtitle" id="admin-header-period">Memuat periode...</span>
+          </div>
+        </div>
+
+        <div class="admin-actions-row">
+          <button type="button" id="btn-refresh-admin" class="btn btn-ghost btn-sm" title="Muat ulang data terbaru">
+            Muat Ulang
+          </button>
+          <a href="index.html" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+            Lihat Web Siswa
+          </a>
+          <button type="button" id="btn-admin-logout" class="btn btn-danger btn-sm">
+            Keluar
+          </button>
+        </div>
+      </div>
+
+      <nav class="student-nav" aria-label="Menu Navigasi Admin">
+        <ul class="nav-list" style="max-width: 1200px;">
+          <li><button type="button" class="nav-btn admin-nav-btn" data-admin-tab="dasbor" aria-current="page">Dasbor &amp; Kotak Masuk</button></li>
+          <li><button type="button" class="nav-btn admin-nav-btn" data-admin-tab="laporan">Laporan PDF &amp; Cadangan</button></li>
+          <li><button type="button" class="nav-btn admin-nav-btn" data-admin-tab="pengaturan">Pengaturan Sekolah</button></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="admin-container">
+      <!-- Status Memuat Data Admin -->
+      <div id="admin-loading" class="card loading-state">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Sedang memuat data layanan BK...</p>
+      </div>
+
+      <!-- ===================================================================
+           TAB A: DASBOR & KOTAK MASUK
+           =================================================================== -->
+      <section id="admin-tab-dasbor" class="admin-tab-panel hidden">
+        <!-- Kartu Angka KPI (Tanpa Grafik) -->
+        <div class="kpi-grid" aria-label="Ringkasan Statistik Kiriman">
+          <div class="kpi-card">
+            <div class="kpi-label">Kiriman Baru</div>
+            <div class="kpi-value" id="kpi-baru">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Belum Dibalas</div>
+            <div class="kpi-value" id="kpi-belum-dibalas">0</div>
+          </div>
+          <div class="kpi-card kpi-alert">
+            <div class="kpi-label">Urgensi Tinggi</div>
+            <div class="kpi-value" id="kpi-urgensi-tinggi">0</div>
+          </div>
+          <div class="kpi-card kpi-alert">
+            <div class="kpi-label">Perlu Eskalasi TPPK</div>
+            <div class="kpi-value" id="kpi-eskalasi">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Periode Aktif</div>
+            <div class="kpi-value" id="kpi-periode-aktif">0</div>
+          </div>
+        </div>
+
+        <!-- Kotak Masuk & Penyaringan -->
+        <div class="card">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <h1 class="section-title" style="font-size: 1.25rem; margin: 0;">Kotak Masuk Curhat &amp; Konseling</h1>
+              <p class="section-desc" style="margin: 0.2rem 0 0; font-size: 0.88rem;">
+                Menampilkan <strong id="inbox-count-label">0</strong> kiriman sesuai penyaringan.
+              </p>
+            </div>
+            <button type="button" id="btn-reset-filter" class="btn btn-ghost btn-sm">Atur Ulang Filter</button>
+          </div>
+
+          <div class="filter-bar">
+            <div>
+              <label for="filter-search" class="form-label" style="font-size: 0.82rem;">Cari Kode / Kata</label>
+              <input type="text" id="filter-search" class="form-control" placeholder="ID Kiriman, isi pesan, nama...">
+            </div>
+            <div>
+              <label for="filter-periode" class="form-label" style="font-size: 0.82rem;">Tahun Ajaran &amp; Semester</label>
+              <select id="filter-periode" class="form-control"></select>
+            </div>
+            <div>
+              <label for="filter-jenjang" class="form-label" style="font-size: 0.82rem;">Jenjang</label>
+              <select id="filter-jenjang" class="form-control">
+                <option value="">Semua Jenjang</option>
+                <option value="7">Kelas 7</option>
+                <option value="8">Kelas 8</option>
+                <option value="9">Kelas 9</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-guru" class="form-label" style="font-size: 0.82rem;">Guru Tujuan</label>
+              <select id="filter-guru" class="form-control"></select>
+            </div>
+            <div>
+              <label for="filter-kategori" class="form-label" style="font-size: 0.82rem;">Kategori</label>
+              <select id="filter-kategori" class="form-control"></select>
+            </div>
+            <div>
+              <label for="filter-status" class="form-label" style="font-size: 0.82rem;">Status</label>
+              <select id="filter-status" class="form-control">
+                <option value="">Semua Status</option>
+                <option value="Baru">Baru</option>
+                <option value="Dibaca">Dibaca</option>
+                <option value="Ditangani">Ditangani</option>
+                <option value="Selesai">Selesai</option>
+                <option value="Dirujuk">Dirujuk</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-urgensi" class="form-label" style="font-size: 0.82rem;">Urgensi</label>
+              <select id="filter-urgensi" class="form-control">
+                <option value="">Semua Urgensi</option>
+                <option value="Tinggi">Tinggi</option>
+                <option value="Sedang">Sedang</option>
+                <option value="Rendah">Rendah</option>
+              </select>
+            </div>
+            <div>
+              <label for="filter-eskalasi" class="form-label" style="font-size: 0.82rem;">Tanda Eskalasi</label>
+              <select id="filter-eskalasi" class="form-control">
+                <option value="">Semua Kiriman</option>
+                <option value="YA">Hanya Perlu Eskalasi TPPK</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID &amp; Waktu</th>
+                  <th>Pengirim</th>
+                  <th>Kategori &amp; Ringkasan</th>
+                  <th>Urgensi</th>
+                  <th>Guru Tujuan</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="inbox-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB B: LAPORAN PDF & CADANGAN EXCEL
+           =================================================================== -->
+      <section id="admin-tab-laporan" class="admin-tab-panel hidden">
+        <div class="form-grid-2">
+          <!-- Laporan Rekap Periodik PDF -->
+          <div class="card">
+            <h2 class="section-title" style="font-size: 1.2rem;">Laporan Rekap Periodik (PDF)</h2>
+            <p class="section-desc" style="font-size: 0.9rem;">
+              Membuat laporan resmi ber-kop sekolah dengan cap <strong>RAHASIA</strong> di setiap halaman, statistik per kategori &amp; status, serta daftar kasus.
+            </p>
+
+            <div class="form-group">
+              <label for="rep-jenis" class="form-label">Jenis Periode Rekap</label>
+              <select id="rep-jenis" class="form-control">
+                <option value="bulanan">Bulanan (Berdasarkan Tanggal Kirim)</option>
+                <option value="semester">Per Semester (Tahun Ajaran &amp; Semester)</option>
+                <option value="tahunan">Tahunan (Satu Tahun Ajaran Penuh)</option>
+              </select>
+            </div>
+
+            <div id="rep-filter-bulanan" class="form-group">
+              <label for="rep-bulan" class="form-label">Pilih Bulan &amp; Tahun</label>
+              <input type="month" id="rep-bulan" class="form-control">
+            </div>
+
+            <div id="rep-filter-ta" class="form-group hidden">
+              <label for="rep-ta" class="form-label">Pilih Tahun Ajaran</label>
+              <select id="rep-ta" class="form-control"></select>
+            </div>
+
+            <div id="rep-filter-semester" class="form-group hidden">
+              <label for="rep-semester" class="form-label">Pilih Semester</label>
+              <select id="rep-semester" class="form-control">
+                <option value="Ganjil">Ganjil</option>
+                <option value="Genap">Genap</option>
+              </select>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="rep-jenjang" class="form-label">Saring Jenjang</label>
+                <select id="rep-jenjang" class="form-control">
+                  <option value="">Semua Jenjang (7, 8, 9)</option>
+                  <option value="7">Kelas 7</option>
+                  <option value="8">Kelas 8</option>
+                  <option value="9">Kelas 9</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="rep-guru" class="form-label">Saring Guru Tujuan</label>
+                <select id="rep-guru" class="form-control"></select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-inline">
+                <input type="checkbox" id="rep-sertakan-identitas">
+                <span>Sertakan identitas siswa (nama &amp; kelas) dalam laporan</span>
+              </label>
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">
+                Secara baku identitas siswa disembunyikan demi menjaga kerahasiaan.
+              </div>
+            </div>
+
+            <div class="admin-actions-row" style="margin-top: 1rem;">
+              <button type="button" id="btn-pdf-rekap-download" class="btn btn-primary">Unduh Rekap PDF</button>
+              <button type="button" id="btn-pdf-rekap-share" class="btn btn-secondary">Bagikan PDF</button>
+            </div>
+          </div>
+
+          <!-- Cadangan Database Excel & Info Lembar Kasus -->
+          <div>
+            <div class="card">
+              <h2 class="section-title" style="font-size: 1.2rem;">Cadangan Seluruh Data (.xlsx)</h2>
+              <p class="section-desc" style="font-size: 0.9rem;">
+                Unduh seluruh isi database (Pengaturan, Guru, Kelas, Kategori, Layanan, FAQ, Kiriman, Balasan, dan Log) dalam satu berkas Microsoft Excel sebagai arsip keamanan sekolah.
+              </p>
+              <button type="button" id="btn-export-xlsx" class="btn btn-primary">Unduh Cadangan Excel (.xlsx)</button>
+            </div>
+
+            <div class="card card-soft">
+              <h3 style="margin: 0 0 0.4rem; font-size: 1.05rem;">Cetak Lembar Kasus Satuan (Untuk Guru BK Lain)</h3>
+              <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
+                Untuk membuat <strong>Lembar Kasus PDF</strong> satu siswa dan mengirimkannya (misalnya lewat WhatsApp) ke guru BK kelas lain, buka salah satu kiriman di tab <strong>Dasbor &amp; Kotak Masuk</strong>, lalu klik tombol <strong>Unduh Lembar Kasus PDF</strong> atau <strong>Bagikan Lembar Kasus</strong>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB C: PENGATURAN SEKOLAH (TANPA EDIT KODE)
+           =================================================================== -->
+      <section id="admin-tab-pengaturan" class="admin-tab-panel hidden">
+        <div class="card">
+          <h1 class="section-title" style="font-size: 1.3rem;">Pengaturan Layanan &amp; Identitas Sekolah</h1>
+          <p class="section-desc" style="font-size: 0.9rem;">
+            Seluruh perubahan di bawah ini langsung tersimpan ke Google Sheet sekolah dan memperbarui tampilan halaman siswa maupun kop laporan PDF.
+          </p>
+
+          <div class="settings-tabs" role="tablist" aria-label="Kategori Pengaturan">
+            <button type="button" class="settings-tab-btn active" data-set-sub="identitas">1. Identitas &amp; Kop Surat</button>
+            <button type="button" class="settings-tab-btn" data-set-sub="periode">2. Periode, Tema &amp; Sambutan</button>
+            <button type="button" class="settings-tab-btn" data-set-sub="guru">3. Daftar Guru BK</button>
+            <button type="button" class="settings-tab-btn" data-set-sub="kelas">4. Daftar Kelas</button>
+            <button type="button" class="settings-tab-btn" data-set-sub="kategori">5. Kategori Curhat</button>
+            <button type="button" class="settings-tab-btn" data-set-sub="layanan-faq">6. Layanan &amp; FAQ</button>
+            <button type="button" class="settings-tab-btn" data-set-sub="privasi">7. Privasi &amp; Darurat</button>
+          </div>
+
+          <!-- Sub 1: Identitas & Kop Surat -->
+          <div id="set-sub-identitas" class="set-sub-panel">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="set-namaSekolah" class="form-label">Nama Lengkap Sekolah</label>
+                <input type="text" id="set-namaSekolah" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="set-namaSingkat" class="form-label">Nama Singkat Layanan BK (Header)</label>
+                <input type="text" id="set-namaSingkat" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="set-alamat" class="form-label">Alamat Sekolah (Kop Laporan)</label>
+                <input type="text" id="set-alamat" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="set-kontakSekolah" class="form-label">Kontak / Email / Website Sekolah</label>
+                <input type="text" id="set-kontakSekolah" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="set-kepalaSekolah" class="form-label">Nama Kepala Sekolah</label>
+                <input type="text" id="set-kepalaSekolah" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="set-penandaTangan" class="form-label">Nama Penanda Tangan Laporan PDF</label>
+                <input type="text" id="set-penandaTangan" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="set-jabatanPenandaTangan" class="form-label">Jabatan Penanda Tangan Laporan</label>
+              <input type="text" id="set-jabatanPenandaTangan" class="form-control" placeholder="Contoh: Koordinator Guru Bimbingan dan Konseling">
+            </div>
+
+            <div class="form-group">
+              <label for="set-logo-file" class="form-label">Logo Sekolah (Otomatis diperkecil agar ringan &amp; tajam di kop PDF)</label>
+              <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div class="img-preview-box" id="preview-logo">Tanpa Logo</div>
+                <div style="flex: 1; min-width: 220px;">
+                  <input type="file" id="set-logo-file" accept="image/png,image/jpeg,image/webp" class="form-control">
+                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    Format PNG/JPG. Ukuran otomatis disesuaikan hingga maksimal 180x180 piksel (&lt; 45 KB).
+                  </div>
+                  <button type="button" id="btn-hapus-logo" class="btn btn-ghost btn-sm" style="margin-top: 0.4rem;">Hapus Logo</button>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" id="btn-save-identitas" class="btn btn-primary">Simpan Identitas Sekolah</button>
+          </div>
+
+          <!-- Sub 2: Periode Aktif, Tema Warna & Sambutan -->
+          <div id="set-sub-periode" class="set-sub-panel hidden">
+            <div class="alert-box alert-info">
+              Setiap kiriman baru dari siswa akan otomatis dicatat pada <strong>Tahun Ajaran</strong> dan <strong>Semester Aktif</strong> di bawah ini tanpa menghapus atau mengubah riwayat kelas tahun sebelumnya.
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="set-tahunAjaranAktif" class="form-label">Tahun Ajaran Aktif</label>
+                <input type="text" id="set-tahunAjaranAktif" class="form-control" placeholder="Contoh: 2026/2027">
+              </div>
+              <div class="form-group">
+                <label for="set-semesterAktif" class="form-label">Semester Aktif</label>
+                <select id="set-semesterAktif" class="form-control">
+                  <option value="Ganjil">Ganjil</option>
+                  <option value="Genap">Genap</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="set-temaWarna" class="form-label">Pilihan Tema Warna Website</label>
+                <select id="set-temaWarna" class="form-control">
+                  <option value="teal-hangat">1. Teal Hangat (Default Ramah &amp; Menenangkan)</option>
+                  <option value="biru-langit">2. Biru Langit (Sejuk &amp; Profesional)</option>
+                  <option value="hijau-daun">3. Hijau Daun (Segar &amp; Alami)</option>
+                  <option value="ungu-lembut">4. Ungu Lembut (Tenang &amp; Modern)</option>
+                  <option value="terakota-ramah">5. Terakota Ramah (Hangat &amp; Akrab)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="set-jamLayanan" class="form-label">Informasi Jam Layanan Ruang BK</label>
+                <input type="text" id="set-jamLayanan" class="form-control" placeholder="Senin - Jumat: 07.30 - 15.00 WIB">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="set-teksSambutan" class="form-label">Teks Sambutan Beranda Siswa</label>
+              <textarea id="set-teksSambutan" class="form-control" style="min-height: 100px;"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="set-banner-file" class="form-label">Gambar Spanduk / Banner Beranda (Opsional)</label>
+              <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div class="banner-preview-box" id="preview-banner">Tanpa Banner</div>
+                <div style="flex: 1; min-width: 220px;">
+                  <input type="file" id="set-banner-file" accept="image/png,image/jpeg,image/webp" class="form-control">
+                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    Disarankan gambar lanskap. Otomatis diperkecil ke lebar maks. 800px (&lt; 45 KB).
+                  </div>
+                  <button type="button" id="btn-hapus-banner" class="btn btn-ghost btn-sm" style="margin-top: 0.4rem;">Hapus Banner</button>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" id="btn-save-periode" class="btn btn-primary">Simpan Periode, Tema &amp; Sambutan</button>
+          </div>
+
+          <!-- Sub 3: Daftar Guru BK -->
+          <div id="set-sub-guru" class="set-sub-panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+              <p style="margin: 0; font-size: 0.92rem; color: var(--text-muted);">
+                Kelola daftar Guru BK yang tampil di profil siswa dan pilihan tujuan curhat.
+              </p>
+              <button type="button" id="btn-add-guru" class="btn btn-secondary btn-sm">+ Tambah Guru BK</button>
+            </div>
+            <div id="editor-guru-list"></div>
+            <button type="button" id="btn-save-guru" class="btn btn-primary">Simpan Daftar Guru BK</button>
+          </div>
+
+          <!-- Sub 4: Daftar Kelas -->
+          <div id="set-sub-kelas" class="set-sub-panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+              <p style="margin: 0; font-size: 0.92rem; color: var(--text-muted);">
+                Daftar kelas pilihan saat siswa menyertakan identitas.
+              </p>
+              <button type="button" id="btn-add-kelas" class="btn btn-secondary btn-sm">+ Tambah Kelas</button>
+            </div>
+            <div id="editor-kelas-list"></div>
+            <button type="button" id="btn-save-kelas" class="btn btn-primary">Simpan Daftar Kelas</button>
+          </div>
+
+          <!-- Sub 5: Kategori Curhat -->
+          <div id="set-sub-kategori" class="set-sub-panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+              <p style="margin: 0; font-size: 0.92rem; color: var(--text-muted);">
+                Kategori bertanda <strong>Eskalasi TPPK</strong> akan mendapat label peringatan khusus di kotak masuk.
+              </p>
+              <button type="button" id="btn-add-kategori" class="btn btn-secondary btn-sm">+ Tambah Kategori</button>
+            </div>
+            <div id="editor-kategori-list"></div>
+            <button type="button" id="btn-save-kategori" class="btn btn-primary">Simpan Kategori Curhat</button>
+          </div>
+
+          <!-- Sub 6: Layanan BK & FAQ -->
+          <div id="set-sub-layanan-faq" class="set-sub-panel hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <h3 style="margin: 0; font-size: 1.08rem;">Daftar Layanan BK</h3>
+              <button type="button" id="btn-add-layanan" class="btn btn-secondary btn-sm">+ Tambah Layanan</button>
+            </div>
+            <div id="editor-layanan-list"></div>
+            <button type="button" id="btn-save-layanan" class="btn btn-primary" style="margin-bottom: 1.75rem;">Simpan Daftar Layanan</button>
+
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 1.5rem 0;">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <h3 style="margin: 0; font-size: 1.08rem;">Pertanyaan Umum (FAQ)</h3>
+              <button type="button" id="btn-add-faq" class="btn btn-secondary btn-sm">+ Tambah FAQ</button>
+            </div>
+            <div id="editor-faq-list"></div>
+            <button type="button" id="btn-save-faq" class="btn btn-primary">Simpan Daftar FAQ</button>
+          </div>
+
+          <!-- Sub 7: Privasi & Kontak Darurat -->
+          <div id="set-sub-privasi" class="set-sub-panel hidden">
+            <div class="alert-box alert-warning">
+              <strong>Perhatian Sekolah:</strong> Draf kebijakan privasi di bawah ini <strong>mohon ditinjau pihak sekolah</strong>, dan seluruh nomor kontak darurat <strong>mohon diverifikasi sebelum dipakai</strong>.
+            </div>
+
+            <div class="form-group">
+              <label for="set-kebijakanPrivasi" class="form-label">Teks Kebijakan Privasi &amp; Batas Kerahasiaan</label>
+              <textarea id="set-kebijakanPrivasi" class="form-control" style="min-height: 180px;"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="set-kontakDarurat" class="form-label">Daftar Kontak Bantuan &amp; Layanan Darurat</label>
+              <textarea id="set-kontakDarurat" class="form-control" style="min-height: 120px;"></textarea>
+            </div>
+
+            <button type="button" id="btn-save-privasi" class="btn btn-primary">Simpan Kebijakan Privasi &amp; Kontak Darurat</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- =======================================================================
+       3. MODAL DETAIL KASUS, BALASAN, & LEMBAR KASUS PDF
+       ======================================================================= -->
+  <div id="case-detail-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-case-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h2 id="modal-case-title" style="margin: 0; font-size: 1.2rem;">Detail Kiriman</h2>
+          <div id="modal-case-subtitle" style="font-size: 0.84rem; color: var(--text-muted);"></div>
+        </div>
+        <button type="button" id="btn-close-case-modal" class="btn btn-ghost btn-sm">Tutup</button>
+      </div>
+
+      <div id="modal-eskalasi-alert" class="alert-box alert-danger hidden"></div>
+
+      <div class="summary-list" id="modal-case-meta"></div>
+
+      <div class="form-group">
+        <div class="form-label">Isi Pesan / Cerita Siswa</div>
+        <div id="modal-case-pesan" class="bubble-student" style="white-space: pre-wrap;"></div>
+      </div>
+
+      <!-- Aksi Cetak / Bagikan Lembar Kasus PDF untuk Guru BK Tujuan -->
+      <div class="card card-soft" style="margin-bottom: 1.15rem;">
+        <div style="font-weight: 800; font-size: 0.96rem; margin-bottom: 0.35rem;">
+          Lembar Kasus PDF (Untuk Diteruskan ke Guru BK Terkait)
+        </div>
+        <label class="checkbox-inline" style="min-height: 36px; font-size: 0.88rem; margin-bottom: 0.65rem;">
+          <input type="checkbox" id="modal-pdf-include-id">
+          <span>Sertakan identitas siswa (nama &amp; kelas) pada PDF ini</span>
+        </label>
+        <div class="admin-actions-row">
+          <button type="button" id="btn-modal-pdf-download" class="btn btn-secondary btn-sm">Unduh Lembar Kasus PDF</button>
+          <button type="button" id="btn-modal-pdf-share" class="btn btn-primary btn-sm">Bagikan PDF (WhatsApp / Lainnya)</button>
+        </div>
+      </div>
+
+      <!-- Riwayat & Form Balasan ke Siswa -->
+      <div style="margin-bottom: 1.25rem;">
+        <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem;">Percakapan &amp; Balasan untuk Siswa</h3>
+        <div id="modal-reply-list" class="reply-thread" style="margin-bottom: 0.85rem;"></div>
+
+        <form id="form-modal-reply">
+          <div class="form-group">
+            <label for="modal-reply-text" class="form-label">Tulis Balasan Baru (Dapat dibaca siswa lewat Kode Tiket)</label>
+            <textarea id="modal-reply-text" class="form-control" style="min-height: 100px;" placeholder="Halo, terima kasih sudah bercerita kepada Bapak/Ibu Guru BK..."></textarea>
+          </div>
+          <button type="submit" id="btn-send-reply" class="btn btn-primary btn-sm">Kirim Balasan ke Siswa</button>
+        </form>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 1.15rem 0;">
+
+      <!-- Status, Rujukan, DiteruskanKe, & Catatan Internal -->
+      <form id="form-modal-update">
+        <h3 style="margin: 0 0 0.75rem; font-size: 1.05rem;">Tindak Lanjut &amp; Catatan Internal BK</h3>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="modal-status" class="form-label">Status Penanganan</label>
+            <select id="modal-status" class="form-control">
+              <option value="Baru">Baru</option>
+              <option value="Dibaca">Dibaca</option>
+              <option value="Ditangani">Ditangani</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Dirujuk">Dirujuk</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="modal-diteruskan" class="form-label">Diteruskan Ke (Guru BK / Wali Kelas)</label>
+            <input type="text" id="modal-diteruskan" class="form-control" placeholder="Contoh: Ibu Rina Kartika (Guru BK Kelas 7)">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="modal-rujukan" class="form-label">Rujukan Ke (Jika Status Dirujuk / TPPK / Pihak Ahli)</label>
+          <input type="text" id="modal-rujukan" class="form-control" placeholder="Contoh: Tim TPPK Sekolah / Puskesmas / P2TP2A">
+        </div>
+
+        <div class="form-group">
+          <label for="modal-catatan" class="form-label">Catatan Internal Guru BK (Tidak tampil di halaman siswa)</label>
+          <textarea id="modal-catatan" class="form-control" style="min-height: 90px;" placeholder="Catat hasil asesmen awal, rencana pemanggilan, atau koordinasi..."></textarea>
+        </div>
+
+        <button type="submit" id="btn-save-case-meta" class="btn btn-primary">Simpan Perubahan Status &amp; Catatan</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-notification" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- Pustaka CDN Resmi (cdnjs.cloudflare.com dengan versi dipatok) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script src="js/config.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
