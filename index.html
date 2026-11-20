@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="teal-hangat">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruang Bimbingan &amp; Konseling SMP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Header & Tombol Keluar Cepat -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#beranda" class="brand" data-nav="beranda" aria-label="Beranda Ruang BK">
+        <div class="brand-logo" id="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title" id="header-title">Ruang BK SMP</span>
+          <span class="brand-subtitle" id="header-subtitle">Aman, Ramah, &amp; Terpercaya</span>
+        </div>
+      </a>
+
+      <button type="button" id="btn-quick-exit" class="btn-quick-exit" title="Segera tutup halaman ini ke situs netral">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>Keluar Cepat</span>
+      </button>
+    </div>
+
+    <nav class="student-nav" aria-label="Menu Utama Siswa">
+      <ul class="nav-list">
+        <li><button type="button" class="nav-btn" data-nav="beranda" aria-current="page">Beranda</button></li>
+        <li><button type="button" class="nav-btn" data-nav="curhat">Mulai Curhat</button></li>
+        <li><button type="button" class="nav-btn" data-nav="cek">Cek Balasan</button></li>
+        <li><button type="button" class="nav-btn" data-nav="guru">Guru BK</button></li>
+        <li><button type="button" class="nav-btn" data-nav="layanan">Layanan &amp; FAQ</button></li>
+        <li><button type="button" class="nav-btn" data-nav="privasi">Privasi</button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" id="main-content">
+    <!-- Status Memuat Awal -->
+    <div id="app-loading" class="card loading-state">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Sedang menyiapkan Ruang BK untukmu...</p>
+    </div>
+
+    <!-- Pesan Galat Koneksi -->
+    <div id="app-error" class="card hidden" role="alert">
+      <h2 class="section-title">Belum Dapat Terhubung</h2>
+      <p class="section-desc" id="app-error-msg">Maaf, layanan sedang mengalami gangguan koneksi. Silakan muat ulang halaman ini.</p>
+      <button type="button" id="btn-retry-init" class="btn btn-primary">Coba Muat Ulang</button>
+    </div>
+
+    <!-- =====================================================================
+         1. VIEW BERANDA
+         ===================================================================== -->
+    <section id="view-beranda" class="view-section hidden">
+      <img id="home-banner" class="school-banner hidden" alt="Spanduk Layanan BK Sekolah">
+
+      <div class="hero-card">
+        <div>
+          <span class="hero-badge" id="home-period-badge">Ruang Aman Siswa</span>
+          <h1 class="hero-title" id="home-school-name">Selamat Datang di Ruang BK</h1>
+          <p class="hero-text" id="home-welcome-text">Ruang BK hadir untuk mendengarkan ceritamu dengan aman, nyaman, dan tanpa menghakimi.</p>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-primary btn-lg" data-nav="curhat">Mulai Curhat</button>
+            <button type="button" class="btn btn-secondary btn-lg" data-nav="cek">Cek Balasan</button>
+          </div>
+          <div class="service-hours" id="home-service-hours"></div>
+        </div>
+
+        <div class="hero-illustration" aria-hidden="true">
+          <svg width="210" height="180" viewBox="0 0 210 180" fill="none">
+            <circle cx="105" cy="90" r="78" fill="var(--primary-soft)"/>
+            <rect x="42" y="46" width="84" height="56" rx="16" fill="#ffffff" stroke="var(--primary)" stroke-width="3"/>
+            <path d="M58 102L46 116V102H58Z" fill="#ffffff" stroke="var(--primary)" stroke-width="3" stroke-linejoin="round"/>
+            <line x1="58" y1="67" x2="108" y2="67" stroke="var(--primary)" stroke-width="4" stroke-linecap="round"/>
+            <line x1="58" y1="81" x2="92" y2="81" stroke="var(--primary-border)" stroke-width="4" stroke-linecap="round"/>
+            <rect x="88" y="84" width="82" height="52" rx="16" fill="var(--primary)"/>
+            <path d="M154 136L166 148V136H154Z" fill="var(--primary)"/>
+            <path d="M129 103C126.5 99.8 121.5 100.2 119.5 103.8C117.5 107.4 121.5 112.5 129 118C136.5 112.5 140.5 107.4 138.5 103.8C136.5 100.2 131.5 99.8 129 103Z" fill="#fde68a"/>
+          </svg>
+        </div>
+      </div>
+
+      <h2 class="section-title">Bagaimana BK Dapat Membantumu?</h2>
+      <p class="section-desc">Pilih layanan yang kamu butuhkan atau langsung sampaikan ceritamu.</p>
+      <div id="home-services-grid" class="grid-cards"></div>
+
+      <div class="card card-soft" style="margin-top: 1.25rem;">
+        <h3 style="margin: 0 0 0.35rem; font-size: 1.05rem;">Privasi &amp; Kerahasiaanmu Terjaga</h3>
+        <p style="margin: 0 0 0.75rem; font-size: 0.92rem; color: var(--text-muted);">
+          Kamu boleh bercerita tanpa nama (Anonim). Website ini tidak merekam email maupun alamat IP perangkatmu.
+        </p>
+        <button type="button" class="btn btn-secondary btn-sm" data-nav="privasi">Baca Kebijakan Privasi &amp; Batas Kerahasiaan</button>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         2. VIEW FORM CURHAT BERTAHAP
+         ===================================================================== -->
+    <section id="view-curhat" class="view-section hidden">
+      <div class="container-narrow">
+        <!-- Form Bertahap -->
+        <div id="curhat-wizard-card" class="card">
+          <div class="wizard-progress">
+            <div class="progress-meta">
+              <span id="wizard-step-label">Langkah 1</span>
+              <span id="wizard-step-percent">0%</span>
+            </div>
+            <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="wizard-progressbar">
+              <div class="progress-fill" id="wizard-progress-fill" style="width: 12%;"></div>
+            </div>
+          </div>
+
+          <div id="wizard-alert" class="alert-box alert-danger hidden" role="alert"></div>
+
+          <!-- Kolom Honeypot Anti-Spam (Tersembunyi dari Pengguna) -->
+          <div class="sr-only" aria-hidden="true">
+            <label for="hp-website">Jangan isi kolom ini</label>
+            <input type="text" id="hp-website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+
+          <!-- Kontainer Isi Langkah Aktif -->
+          <div id="wizard-step-container"></div>
+
+          <!-- Navigasi Langkah -->
+          <div class="wizard-nav" id="wizard-nav-bar">
+            <button type="button" id="btn-step-prev" class="btn btn-ghost">Sebelumnya</button>
+            <button type="button" id="btn-step-next" class="btn btn-primary">Lanjut</button>
+          </div>
+        </div>
+
+        <!-- Layar Sukses Setelah Kirim -->
+        <div id="curhat-success-card" class="card hidden">
+          <div id="success-emergency-box" class="alert-box alert-support hidden" role="alert">
+            <h3>Kamu Tidak Sendirian, Bantuan Selalu Ada</h3>
+            <p style="margin: 0 0 0.5rem;">
+              Pesanmu telah kami terima sebagai prioritas utama. Jika saat ini kamu merasa tidak aman atau butuh berbicara segera dengan seseorang, hubungi layanan bantuan di bawah ini atau temui orang dewasa tepercaya di dekatmu:
+            </p>
+            <div class="emergency-numbers" id="success-emergency-contacts"></div>
+          </div>
+
+          <h2 class="section-title" style="text-align: center;">Ceritamu Berhasil Terkirim</h2>
+          <p class="section-desc" style="text-align: center;">
+            Terima kasih sudah berani bercerita. Simpan <strong>Kode Tiket</strong> di bawah ini dengan baik:
+          </p>
+
+          <div class="ticket-box">
+            <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-muted);">KODE TIKET KAMU</div>
+            <div class="ticket-code" id="result-ticket-code">----------</div>
+            <div>
+              <button type="button" id="btn-copy-ticket" class="btn btn-primary">Salin Kode Tiket</button>
+            </div>
+          </div>
+
+          <div class="alert-box alert-warning">
+            <strong>Penting untuk Diingat:</strong> Demi menjaga kerahasiaanmu, sistem tidak menyimpan kode tiket asli ini. Kode ini adalah <strong>satu-satunya cara</strong> untuk membuka balasan dari Guru BK di menu <em>Cek Balasan</em>. Catat atau tangkap layar (screenshot) kode ini sebelum menutup halaman.
+          </div>
+
+          <div class="hero-actions" style="margin-top: 1.25rem;">
+            <button type="button" id="btn-go-check" class="btn btn-secondary">Ke Halaman Cek Balasan</button>
+            <button type="button" id="btn-new-curhat" class="btn btn-ghost">Kirim Cerita Lain</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         3. VIEW CEK BALASAN
+         ===================================================================== -->
+    <section id="view-cek" class="view-section hidden">
+      <div class="container-narrow">
+        <div class="card">
+          <h1 class="section-title">Cek Balasan Guru BK</h1>
+          <p class="section-desc">Masukkan 10 karakter Kode Tiket yang kamu dapatkan setelah mengirim cerita.</p>
+
+          <form id="form-cek-tiket" novalidate>
+            <div class="form-group">
+              <label for="input-kode-tiket" class="form-label">Kode Tiket (10 Karakter)</label>
+              <input
+                type="text"
+                id="input-kode-tiket"
+                class="form-control"
+                maxlength="14"
+                placeholder="Contoh: 8K4M9P2X7R"
+                autocomplete="off"
+                spellcheck="false"
+                style="text-transform: uppercase; font-weight: 800; letter-spacing: 0.12em; font-size: 1.15rem;"
+                required
+              >
+            </div>
+
+            <div id="cek-error-box" class="alert-box alert-danger hidden" role="alert"></div>
+
+            <button type="submit" id="btn-submit-cek" class="btn btn-primary btn-block">Lihat Status &amp; Balasan</button>
+          </form>
+        </div>
+
+        <div id="cek-result-card" class="card hidden">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem;">
+            <h2 class="section-title" style="margin: 0; font-size: 1.25rem;">Status Kirimanmu</h2>
+            <span id="cek-status-badge" class="badge badge-baru">Baru</span>
+          </div>
+
+          <p id="cek-status-desc" style="margin: 0 0 1rem; font-size: 0.94rem; color: var(--text-muted);"></p>
+
+          <div class="summary-list">
+            <div class="summary-row">
+              <span class="summary-key">Waktu Kirim</span>
+              <span class="summary-val" id="cek-waktu">-</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">Topik &amp; Guru Tujuan</span>
+              <span class="summary-val" id="cek-topik-guru">-</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-key">Pilihan Balasan</span>
+              <span class="summary-val" id="cek-preferensi">-</span>
+            </div>
+          </div>
+
+          <h3 style="margin: 1.1rem 0 0.5rem; font-size: 1.05rem;">Percakapan</h3>
+          <div class="reply-thread" id="cek-thread"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         4. VIEW PROFIL GURU BK
+         ===================================================================== -->
+    <section id="view-guru" class="view-section hidden">
+      <h1 class="section-title">Profil Guru Bimbingan &amp; Konseling</h1>
+      <p class="section-desc">Kenali Bapak/Ibu Guru BK di sekolah yang siap mendampingi dan mendengarkan ceritamu.</p>
+      <div id="guru-list" class="grid-cards"></div>
+    </section>
+
+    <!-- =====================================================================
+         5. VIEW LAYANAN & FAQ
+         ===================================================================== -->
+    <section id="view-layanan" class="view-section hidden">
+      <h1 class="section-title">Layanan BK &amp; Pertanyaan Umum (FAQ)</h1>
+      <p class="section-desc">Informasi seputar layanan konseling sekolah dan cara kerja website ini.</p>
+
+      <h2 style="font-size: 1.2rem; margin: 0 0 0.75rem;">Jenis Layanan BK</h2>
+      <div id="layanan-list" class="grid-cards" style="margin-bottom: 1.75rem;"></div>
+
+      <h2 style="font-size: 1.2rem; margin: 0 0 0.75rem;">Pertanyaan yang Sering Diajukan</h2>
+      <div id="faq-list"></div>
+    </section>
+
+    <!-- =====================================================================
+         6. VIEW PRIVASI & BATAS KERAHASIAAN
+         ===================================================================== -->
+    <section id="view-privasi" class="view-section hidden">
+      <div class="container-narrow">
+        <div class="card">
+          <h1 class="section-title">Privasi &amp; Batas Kerahasiaan</h1>
+          <p class="section-desc">Komitmen kami dalam menjaga keamanan, kenyamanan, dan keselamatan setiap siswa.</p>
+
+          <div id="privasi-content" style="white-space: pre-line; line-height: 1.7; color: var(--text-main);"></div>
+        </div>
+
+        <div class="card card-soft">
+          <h2 style="margin: 0 0 0.45rem; font-size: 1.12rem;">Kontak Bantuan &amp; Layanan Darurat</h2>
+          <p style="margin: 0 0 0.65rem; font-size: 0.92rem; color: var(--text-muted);">
+            Jika kamu atau temanmu berada dalam situasi darurat atau membutuhkan bantuan segera di luar jam sekolah:
+          </p>
+          <div class="emergency-numbers" id="privasi-emergency"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div id="footer-school-info">Layanan Bimbingan dan Konseling SMP</div>
+    <div style="margin-top: 0.25rem;">Ruang aman untuk bercerita dan bertumbuh bersama.</div>
+  </footer>
+
+  <div id="toast-notification" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

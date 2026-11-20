@@ -1,0 +1,1211 @@
+/* ==========================================================================
+SISTEM DESAIN PORTAL BK SMP (SISWA & ADMIN)
+Mobile-First, Aksesibel (WCAG AA), & Mendukung 5 Tema Warna Dinamis
+========================================================================== */
+
+:root,
+[data-theme="teal-hangat"] {
+--primary: #0f766e;
+--primary-hover: #115e59;
+--primary-soft: #e6f4f1;
+--primary-border: #99f6e4;
+--accent: #b45309;
+--accent-soft: #fef3c7;
+--bg-page: #f3f8f7;
+--bg-surface: #ffffff;
+--bg-subtle: #f8fafc;
+--text-main: #1e293b;
+--text-muted: #475569;
+--border-color: #cbd5e1;
+--focus-ring: #0d9488;
+}
+
+[data-theme="biru-langit"] {
+--primary: #0369a1;
+--primary-hover: #075985;
+--primary-soft: #e0f2fe;
+--primary-border: #bae6fd;
+--accent: #c2410c;
+--accent-soft: #ffedd5;
+--bg-page: #f2f7fb;
+--bg-surface: #ffffff;
+--bg-subtle: #f8fafc;
+--text-main: #1e293b;
+--text-muted: #475569;
+--border-color: #cbd5e1;
+--focus-ring: #0284c7;
+}
+
+[data-theme="hijau-daun"] {
+--primary: #15803d;
+--primary-hover: #166534;
+--primary-soft: #dcfce7;
+--primary-border: #bbf7d0;
+--accent: #b45309;
+--accent-soft: #fef3c7;
+--bg-page: #f3f9f4;
+--bg-surface: #ffffff;
+--bg-subtle: #f8fafc;
+--text-main: #1e293b;
+--text-muted: #475569;
+--border-color: #cbd5e1;
+--focus-ring: #16a34a;
+}
+
+[data-theme="ungu-lembut"] {
+--primary: #4338ca;
+--primary-hover: #3730a3;
+--primary-soft: #e0e7ff;
+--primary-border: #c7d2fe;
+--accent: #b45309;
+--accent-soft: #fef3c7;
+--bg-page: #f5f5fc;
+--bg-surface: #ffffff;
+--bg-subtle: #f8fafc;
+--text-main: #1e293b;
+--text-muted: #475569;
+--border-color: #cbd5e1;
+--focus-ring: #4f46e5;
+}
+
+[data-theme="terakota-ramah"] {
+--primary: #b45309;
+--primary-hover: #92400e;
+--primary-soft: #fef3c7;
+--primary-border: #fde68a;
+--accent: #0f766e;
+--accent-soft: #ccfbf1;
+--bg-page: #fbf8f4;
+--bg-surface: #ffffff;
+--bg-subtle: #fafaf9;
+--text-main: #1c1917;
+--text-muted: #57534e;
+--border-color: #d6d3d1;
+--focus-ring: #d97706;
+}
+
+/* Reset & Tipografi Dasar */
+*,
+*::before,
+*::after {
+box-sizing: border-box;
+}
+
+html {
+font-size: 16px;
+scroll-behavior: smooth;
+}
+
+body {
+margin: 0;
+font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+background-color: var(--bg-page);
+color: var(--text-main);
+line-height: 1.6;
+-webkit-font-smoothing: antialiased;
+}
+
+img {
+max-width: 100%;
+display: block;
+}
+
+button,
+input,
+select,
+textarea {
+font-family: inherit;
+font-size: 1rem;
+}
+
+:focus-visible {
+outline: 3px solid var(--focus-ring);
+outline-offset: 2px;
+}
+
+.sr-only {
+position: absolute;
+width: 1px;
+height: 1px;
+padding: 0;
+margin: -1px;
+overflow: hidden;
+clip: rect(0, 0, 0, 0);
+white-space: nowrap;
+border: 0;
+}
+
+.hidden {
+display: none !important;
+}
+
+/* ==========================================================================
+HEADER & TOMBOL KELUAR CEPAT (SISWA)
+========================================================================== */
+
+.site-header {
+position: sticky;
+top: 0;
+z-index: 40;
+background-color: var(--bg-surface);
+border-bottom: 1px solid var(--border-color);
+box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.header-inner {
+max-width: 960px;
+margin: 0 auto;
+padding: 0.65rem 1rem;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 0.75rem;
+}
+
+.brand {
+display: flex;
+align-items: center;
+gap: 0.65rem;
+text-decoration: none;
+color: var(--text-main);
+min-width: 0;
+}
+
+.brand-logo {
+width: 42px;
+height: 42px;
+border-radius: 12px;
+background-color: var(--primary-soft);
+color: var(--primary);
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+overflow: hidden;
+border: 1px solid var(--primary-border);
+}
+
+.brand-logo img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.brand-text {
+min-width: 0;
+}
+
+.brand-title {
+display: block;
+font-weight: 800;
+font-size: 1.05rem;
+line-height: 1.2;
+color: var(--primary);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.brand-subtitle {
+display: block;
+font-size: 0.78rem;
+color: var(--text-muted);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.btn-quick-exit {
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+min-height: 44px;
+padding: 0.5rem 0.9rem;
+border-radius: 999px;
+border: 1.5px solid #fecdd3;
+background-color: #fff1f2;
+color: #be123c;
+font-weight: 700;
+font-size: 0.88rem;
+cursor: pointer;
+flex-shrink: 0;
+transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-quick-exit:hover {
+background-color: #ffe4e6;
+}
+
+.btn-quick-exit:active {
+transform: scale(0.98);
+}
+
+/* Navigasi Utama Siswa */
+.student-nav {
+background-color: var(--bg-subtle);
+border-top: 1px solid #e2e8f0;
+overflow-x: auto;
+scrollbar-width: none;
+}
+
+.student-nav::-webkit-scrollbar {
+display: none;
+}
+
+.nav-list {
+max-width: 960px;
+margin: 0 auto;
+padding: 0.35rem 0.75rem;
+display: flex;
+gap: 0.35rem;
+list-style: none;
+}
+
+.nav-btn {
+min-height: 44px;
+padding: 0.45rem 0.9rem;
+border: none;
+border-radius: 10px;
+background: transparent;
+color: var(--text-muted);
+font-weight: 700;
+font-size: 0.92rem;
+white-space: nowrap;
+cursor: pointer;
+transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-btn:hover {
+background-color: var(--primary-soft);
+color: var(--primary);
+}
+
+.nav-btn[aria-current="page"] {
+background-color: var(--primary);
+color: #ffffff;
+}
+
+/* ==========================================================================
+KONTAINER & KOMPONEN UMUM
+========================================================================== */
+
+.container {
+max-width: 960px;
+margin: 0 auto;
+padding: 1.25rem 1rem 3rem;
+}
+
+.container-narrow {
+max-width: 680px;
+margin: 0 auto;
+}
+
+.card {
+background-color: var(--bg-surface);
+border: 1px solid #e2e8f0;
+border-radius: 18px;
+padding: 1.35rem;
+box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+margin-bottom: 1.25rem;
+}
+
+.card-soft {
+background-color: var(--primary-soft);
+border: 1px solid var(--primary-border);
+border-radius: 16px;
+padding: 1.15rem;
+}
+
+.section-title {
+margin: 0 0 0.4rem;
+font-size: 1.45rem;
+font-weight: 800;
+color: var(--text-main);
+line-height: 1.3;
+}
+
+.section-desc {
+margin: 0 0 1.25rem;
+color: var(--text-muted);
+font-size: 0.98rem;
+}
+
+/* Tombol Utama & Sekunder (Target sentuh minimal 44px) */
+.btn {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+gap: 0.5rem;
+min-height: 46px;
+padding: 0.65rem 1.25rem;
+border-radius: 12px;
+border: 1.5px solid transparent;
+font-weight: 700;
+font-size: 0.98rem;
+cursor: pointer;
+text-decoration: none;
+transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn:disabled {
+opacity: 0.6;
+cursor: not-allowed;
+}
+
+.btn:active:not(:disabled) {
+transform: scale(0.99);
+}
+
+.btn-lg {
+min-height: 52px;
+padding: 0.8rem 1.5rem;
+font-size: 1.05rem;
+border-radius: 14px;
+}
+
+.btn-sm {
+min-height: 38px;
+padding: 0.35rem 0.8rem;
+font-size: 0.88rem;
+border-radius: 9px;
+}
+
+.btn-primary {
+background-color: var(--primary);
+color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+background-color: var(--bg-surface);
+color: var(--primary);
+border-color: var(--primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+background-color: var(--primary-soft);
+}
+
+.btn-ghost {
+background-color: #f1f5f9;
+color: var(--text-main);
+}
+
+.btn-ghost:hover:not(:disabled) {
+background-color: #e2e8f0;
+}
+
+.btn-danger {
+background-color: #be123c;
+color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+background-color: #9f1239;
+}
+
+.btn-block {
+width: 100%;
+}
+
+/* ==========================================================================
+HERO & BERANDA SISWA
+========================================================================== */
+
+.school-banner {
+width: 100%;
+max-height: 220px;
+object-fit: cover;
+border-radius: 16px;
+margin-bottom: 1.25rem;
+border: 1px solid #e2e8f0;
+}
+
+.hero-card {
+background: linear-gradient(135deg, var(--primary-soft) 0%, #ffffff 70%);
+border: 1px solid var(--primary-border);
+border-radius: 22px;
+padding: 1.6rem 1.35rem;
+margin-bottom: 1.5rem;
+display: grid;
+grid-template-columns: 1fr;
+gap: 1.25rem;
+align-items: center;
+}
+
+@media (min-width: 720px) {
+.hero-card {
+grid-template-columns: 1.45fr 0.85fr;
+padding: 2rem;
+}
+}
+
+.hero-badge {
+display: inline-flex;
+align-items: center;
+gap: 0.4rem;
+background-color: var(--bg-surface);
+color: var(--primary);
+border: 1px solid var(--primary-border);
+padding: 0.3rem 0.75rem;
+border-radius: 999px;
+font-size: 0.82rem;
+font-weight: 800;
+margin-bottom: 0.75rem;
+}
+
+.hero-title {
+margin: 0 0 0.65rem;
+font-size: 1.65rem;
+font-weight: 800;
+line-height: 1.25;
+color: var(--text-main);
+}
+
+@media (min-width: 720px) {
+.hero-title {
+font-size: 1.95rem;
+}
+}
+
+.hero-text {
+margin: 0 0 1.25rem;
+color: var(--text-muted);
+font-size: 1.02rem;
+white-space: pre-line;
+}
+
+.hero-actions {
+display: flex;
+flex-wrap: wrap;
+gap: 0.75rem;
+}
+
+.hero-actions .btn {
+flex: 1 1 180px;
+}
+
+.hero-illustration {
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+.service-hours {
+margin-top: 1rem;
+padding-top: 0.85rem;
+border-top: 1px dashed var(--primary-border);
+font-size: 0.88rem;
+color: var(--text-muted);
+}
+
+/* Grid Kartu Layanan & Guru */
+.grid-cards {
+display: grid;
+grid-template-columns: 1fr;
+gap: 1rem;
+}
+
+@media (min-width: 640px) {
+.grid-cards {
+grid-template-columns: repeat(2, 1fr);
+}
+}
+
+.service-item {
+background-color: var(--bg-surface);
+border: 1px solid #e2e8f0;
+border-radius: 16px;
+padding: 1.15rem;
+}
+
+.service-item h3 {
+margin: 0 0 0.35rem;
+font-size: 1.08rem;
+color: var(--primary);
+}
+
+.service-item p {
+margin: 0;
+font-size: 0.94rem;
+color: var(--text-muted);
+}
+
+/* ==========================================================================
+WIZARD CURHAT BERTAHAP (SATU LANGKAH PER LAYAR)
+========================================================================== */
+
+.wizard-progress {
+margin-bottom: 1.25rem;
+}
+
+.progress-meta {
+display: flex;
+justify-content: space-between;
+align-items: center;
+font-size: 0.88rem;
+font-weight: 700;
+color: var(--primary);
+margin-bottom: 0.45rem;
+}
+
+.progress-track {
+width: 100%;
+height: 10px;
+background-color: #e2e8f0;
+border-radius: 999px;
+overflow: hidden;
+}
+
+.progress-fill {
+height: 100%;
+background-color: var(--primary);
+border-radius: 999px;
+transition: width 0.25s ease;
+}
+
+.step-title {
+margin: 0 0 0.35rem;
+font-size: 1.32rem;
+font-weight: 800;
+}
+
+.step-hint {
+margin: 0 0 1.15rem;
+font-size: 0.95rem;
+color: var(--text-muted);
+}
+
+/* Pilihan Kartu Radio / Option */
+.choice-list {
+display: grid;
+gap: 0.75rem;
+}
+
+.choice-card {
+display: flex;
+align-items: flex-start;
+gap: 0.85rem;
+width: 100%;
+text-align: left;
+padding: 1rem 1.1rem;
+min-height: 56px;
+border-radius: 14px;
+border: 2px solid #e2e8f0;
+background-color: var(--bg-surface);
+cursor: pointer;
+transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.choice-card:hover {
+border-color: var(--primary-border);
+background-color: var(--bg-subtle);
+}
+
+.choice-card.selected,
+.choice-card[aria-pressed="true"] {
+border-color: var(--primary);
+background-color: var(--primary-soft);
+}
+
+.choice-radio-dot {
+width: 22px;
+height: 22px;
+border-radius: 50%;
+border: 2px solid #94a3b8;
+flex-shrink: 0;
+margin-top: 2px;
+display: flex;
+align-items: center;
+justify-content: center;
+background-color: #ffffff;
+}
+
+.choice-card.selected .choice-radio-dot,
+.choice-card[aria-pressed="true"] .choice-radio-dot {
+border-color: var(--primary);
+}
+
+.choice-card.selected .choice-radio-dot::after,
+.choice-card[aria-pressed="true"] .choice-radio-dot::after {
+content: '';
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background-color: var(--primary);
+}
+
+.choice-content {
+flex: 1;
+min-width: 0;
+}
+
+.choice-title {
+display: block;
+font-weight: 800;
+font-size: 1.02rem;
+color: var(--text-main);
+}
+
+.choice-sub {
+display: block;
+font-size: 0.88rem;
+color: var(--text-muted);
+margin-top: 0.2rem;
+}
+
+/* Pilihan Jenjang 3 Kolom */
+.grade-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 0.75rem;
+}
+
+.grade-btn {
+min-height: 76px;
+border-radius: 16px;
+border: 2px solid #e2e8f0;
+background-color: var(--bg-surface);
+font-weight: 800;
+font-size: 1.2rem;
+color: var(--text-main);
+cursor: pointer;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 0.2rem;
+}
+
+.grade-btn span {
+font-size: 0.8rem;
+font-weight: 600;
+color: var(--text-muted);
+}
+
+.grade-btn.selected {
+border-color: var(--primary);
+background-color: var(--primary-soft);
+color: var(--primary);
+}
+
+/* Form Input */
+.form-group {
+margin-bottom: 1rem;
+}
+
+.form-label {
+display: block;
+font-weight: 700;
+margin-bottom: 0.4rem;
+color: var(--text-main);
+font-size: 0.95rem;
+}
+
+.form-control {
+width: 100%;
+min-height: 46px;
+padding: 0.65rem 0.85rem;
+border-radius: 12px;
+border: 1.5px solid var(--border-color);
+background-color: #ffffff;
+color: var(--text-main);
+transition: border-color 0.15s ease;
+}
+
+.form-control:focus {
+border-color: var(--primary);
+outline: none;
+box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+textarea.form-control {
+min-height: 150px;
+resize: vertical;
+line-height: 1.6;
+}
+
+.char-counter {
+text-align: right;
+font-size: 0.82rem;
+color: var(--text-muted);
+margin-top: 0.3rem;
+}
+
+.wizard-nav {
+display: flex;
+justify-content: space-between;
+gap: 0.75rem;
+margin-top: 1.5rem;
+padding-top: 1rem;
+border-top: 1px solid #e2e8f0;
+}
+
+.wizard-nav .btn {
+min-width: 125px;
+}
+
+/* Kotak Peringatan, Dukungan Darurat, & Penjelasan Jujur */
+.alert-box {
+border-radius: 14px;
+padding: 1rem 1.1rem;
+margin-bottom: 1rem;
+font-size: 0.93rem;
+}
+
+.alert-info {
+background-color: #f0f9ff;
+border: 1px solid #bae6fd;
+color: #0c4a6e;
+}
+
+.alert-warning {
+background-color: #fffbeb;
+border: 1px solid #fde68a;
+color: #78350f;
+}
+
+.alert-danger {
+background-color: #fff1f2;
+border: 1px solid #fecdd3;
+color: #881337;
+}
+
+.alert-support {
+background-color: #fff7ed;
+border: 2px solid #fdba74;
+color: #7c2d12;
+}
+
+.alert-support h3,
+.alert-support h4 {
+margin: 0 0 0.4rem;
+color: #9a3412;
+}
+
+.emergency-numbers {
+background-color: #ffffff;
+border-radius: 10px;
+padding: 0.75rem 0.9rem;
+margin-top: 0.6rem;
+border: 1px solid #fed7aa;
+white-space: pre-line;
+font-weight: 700;
+font-size: 0.9rem;
+}
+
+/* Ringkasan Sebelum Kirim */
+.summary-list {
+display: grid;
+gap: 0.65rem;
+background-color: var(--bg-subtle);
+border: 1px solid #e2e8f0;
+border-radius: 14px;
+padding: 1rem;
+margin-bottom: 1rem;
+}
+
+.summary-row {
+display: flex;
+flex-direction: column;
+gap: 0.15rem;
+padding-bottom: 0.55rem;
+border-bottom: 1px dashed #cbd5e1;
+}
+
+.summary-row:last-child {
+border-bottom: none;
+padding-bottom: 0;
+}
+
+.summary-key {
+font-size: 0.82rem;
+font-weight: 700;
+color: var(--text-muted);
+}
+
+.summary-val {
+font-size: 0.96rem;
+font-weight: 700;
+color: var(--text-main);
+white-space: pre-wrap;
+word-break: break-word;
+}
+
+/* Kotak Tiket Sukses */
+.ticket-box {
+text-align: center;
+background-color: var(--primary-soft);
+border: 2px dashed var(--primary);
+border-radius: 18px;
+padding: 1.5rem 1rem;
+margin: 1rem 0;
+}
+
+.ticket-code {
+font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+font-size: 2rem;
+font-weight: 800;
+letter-spacing: 0.16em;
+color: var(--primary);
+background-color: #ffffff;
+padding: 0.65rem 1rem;
+border-radius: 12px;
+border: 1px solid var(--primary-border);
+display: inline-block;
+margin: 0.65rem 0;
+user-select: all;
+}
+
+/* ==========================================================================
+CEK BALASAN, PROFIL GURU, & FAQ
+========================================================================== */
+
+.reply-thread {
+display: grid;
+gap: 0.85rem;
+margin-top: 1rem;
+}
+
+.bubble-student {
+background-color: #f1f5f9;
+border-radius: 14px;
+padding: 1rem;
+border-left: 4px solid #64748b;
+}
+
+.bubble-teacher {
+background-color: var(--primary-soft);
+border-radius: 14px;
+padding: 1rem;
+border-left: 4px solid var(--primary);
+}
+
+.bubble-meta {
+font-size: 0.8rem;
+font-weight: 700;
+color: var(--text-muted);
+margin-bottom: 0.35rem;
+}
+
+.bubble-body {
+white-space: pre-wrap;
+word-break: break-word;
+margin: 0;
+}
+
+/* Profil Guru BK */
+.teacher-card {
+display: flex;
+gap: 1rem;
+align-items: flex-start;
+background-color: var(--bg-surface);
+border: 1px solid #e2e8f0;
+border-radius: 16px;
+padding: 1.15rem;
+}
+
+.teacher-avatar {
+width: 64px;
+height: 64px;
+border-radius: 16px;
+background-color: var(--primary-soft);
+color: var(--primary);
+font-weight: 800;
+font-size: 1.35rem;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+overflow: hidden;
+border: 1px solid var(--primary-border);
+}
+
+.teacher-avatar img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.teacher-info h3 {
+margin: 0 0 0.2rem;
+font-size: 1.08rem;
+}
+
+.teacher-role {
+font-size: 0.86rem;
+font-weight: 700;
+color: var(--primary);
+margin-bottom: 0.4rem;
+}
+
+.teacher-bio {
+margin: 0 0 0.4rem;
+font-size: 0.92rem;
+color: var(--text-muted);
+}
+
+.teacher-contact {
+font-size: 0.84rem;
+font-weight: 700;
+color: var(--text-main);
+}
+
+/* FAQ Akordeon */
+.faq-item {
+border: 1px solid #e2e8f0;
+border-radius: 14px;
+background-color: var(--bg-surface);
+margin-bottom: 0.75rem;
+overflow: hidden;
+}
+
+.faq-item summary {
+padding: 1rem 1.15rem;
+font-weight: 800;
+cursor: pointer;
+min-height: 48px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker {
+display: none;
+}
+
+.faq-answer {
+padding: 0 1.15rem 1rem;
+color: var(--text-muted);
+border-top: 1px solid #f1f5f9;
+padding-top: 0.75rem;
+white-space: pre-line;
+}
+
+/* Badge Status */
+.badge {
+display: inline-flex;
+align-items: center;
+padding: 0.22rem 0.65rem;
+border-radius: 999px;
+font-size: 0.78rem;
+font-weight: 800;
+}
+
+.badge-baru { background-color: #dbeafe; color: #1e40af; }
+.badge-dibaca { background-color: #e0e7ff; color: #3730a3; }
+.badge-ditangani { background-color: #fef3c7; color: #92400e; }
+.badge-selesai { background-color: #dcfce7; color: #166534; }
+.badge-dirujuk { background-color: #f3e8ff; color: #6b21a8; }
+.badge-tinggi { background-color: #fee2e2; color: #991b1b; }
+.badge-sedang { background-color: #fef3c7; color: #92400e; }
+.badge-rendah { background-color: #f1f5f9; color: #334155; }
+.badge-eskalasi { background-color: #be123c; color: #ffffff; }
+
+/* Status Memuat & Keadaan Kosong */
+.loading-state,
+.empty-state {
+text-align: center;
+padding: 2.25rem 1rem;
+color: var(--text-muted);
+}
+
+.spinner {
+width: 36px;
+height: 36px;
+border: 3.5px solid var(--primary-soft);
+border-top-color: var(--primary);
+border-radius: 50%;
+animation: spin 0.75s linear infinite;
+margin: 0 auto 0.75rem;
+}
+
+@keyframes spin {
+to { transform: rotate(360deg); }
+}
+
+/* Notifikasi Toast Ringan */
+.toast {
+position: fixed;
+bottom: 1.25rem;
+left: 50%;
+transform: translateX(-50%);
+background-color: #1e293b;
+color: #ffffff;
+padding: 0.7rem 1.2rem;
+border-radius: 999px;
+font-size: 0.9rem;
+font-weight: 700;
+z-index: 100;
+box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+max-width: 90vw;
+text-align: center;
+}
+
+/* Footer */
+.site-footer {
+border-top: 1px solid #e2e8f0;
+background-color: var(--bg-surface);
+padding: 1.5rem 1rem;
+text-align: center;
+font-size: 0.85rem;
+color: var(--text-muted);
+}
+
+/* ==========================================================================
+GAYA KHUSUS HALAMAN ADMIN (PROFESIONAL & PADAT)
+========================================================================== */
+
+body.admin-mode {
+background-color: #f1f5f9;
+}
+
+.admin-container {
+max-width: 1200px;
+margin: 0 auto;
+padding: 1.25rem 1rem 3rem;
+}
+
+.kpi-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 0.85rem;
+margin-bottom: 1.25rem;
+}
+
+@media (min-width: 768px) {
+.kpi-grid {
+grid-template-columns: repeat(5, 1fr);
+}
+}
+
+.kpi-card {
+background-color: #ffffff;
+border: 1px solid #e2e8f0;
+border-radius: 14px;
+padding: 1rem;
+}
+
+.kpi-label {
+font-size: 0.8rem;
+font-weight: 700;
+color: var(--text-muted);
+}
+
+.kpi-value {
+font-size: 1.75rem;
+font-weight: 800;
+color: var(--primary);
+margin-top: 0.2rem;
+}
+
+.kpi-card.kpi-alert .kpi-value {
+color: #be123c;
+}
+
+.filter-bar {
+display: grid;
+grid-template-columns: 1fr;
+gap: 0.65rem;
+margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+.filter-bar {
+grid-template-columns: repeat(4, 1fr);
+}
+}
+
+.table-wrap {
+width: 100%;
+overflow-x: auto;
+background-color: #ffffff;
+border: 1px solid #e2e8f0;
+border-radius: 14px;
+}
+
+.data-table {
+width: 100%;
+border-collapse: collapse;
+font-size: 0.9rem;
+}
+
+.data-table th,
+.data-table td {
+padding: 0.75rem 0.85rem;
+text-align: left;
+border-bottom: 1px solid #e2e8f0;
+vertical-align: top;
+}
+
+.data-table th {
+background-color: #f8fafc;
+font-weight: 800;
+color: var(--text-main);
+white-space: nowrap;
+}
+
+.data-table tr:hover td {
+background-color: #f8fafc;
+}
+
+.modal-backdrop {
+position: fixed;
+inset: 0;
+background-color: rgba(15, 23, 42, 0.55);
+z-index: 60;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 1rem;
+overflow-y: auto;
+}
+
+.modal-dialog {
+background-color: #ffffff;
+border-radius: 18px;
+width: 100%;
+max-width: 740px;
+max-height: 90vh;
+overflow-y: auto;
+padding: 1.4rem;
+box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+}
+
+.modal-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+gap: 1rem;
+padding-bottom: 0.85rem;
+border-bottom: 1px solid #e2e8f0;
+margin-bottom: 1rem;
+}
+
+.settings-tabs {
+display: flex;
+flex-wrap: wrap;
+gap: 0.4rem;
+margin-bottom: 1.1rem;
+}
+
+.settings-tab-btn {
+min-height: 40px;
+padding: 0.45rem 0.9rem;
+border-radius: 10px;
+border: 1px solid #cbd5e1;
+background-color: #ffffff;
+font-weight: 700;
+font-size: 0.88rem;
+cursor: pointer;
+}
+
+.settings-tab-btn.active {
+background-color: var(--primary);
+color: #ffffff;
+border-color: var(--primary);
+}
