@@ -47,12 +47,26 @@
 
   async function panggilAPI(aksi, payload) {
     const body = JSON.stringify(Object.assign({ a: aksi }, payload || {}));
-    const res = await fetch(CONFIG.WEB_APP_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: body
-    });
-    return await res.json();
+    console.log('[BK] Kirim:', aksi, '| ukuran:', body.length, 'byte');
+    let res;
+    try {
+      res = await fetch(CONFIG.WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: body
+      });
+    } catch (e) {
+      console.error('[BK] Fetch gagal:', e);
+      throw new Error('Tidak dapat terhubung ke server (jaringan/CORS).');
+    }
+    const teks = await res.text();
+    console.log('[BK] Respons:', res.status, '| isi:', teks.slice(0, 300));
+    try {
+      return JSON.parse(teks);
+    } catch (e) {
+      console.error('[BK] Respons bukan JSON. Kemungkinan URL salah atau server error. Isi:', teks.slice(0, 500));
+      throw new Error('Server mengembalikan halaman non-JSON. Periksa URL Web App di js/config.js.');
+    }
   }
 
   // ===== Inisialisasi =====
@@ -62,8 +76,36 @@
     muatDataPublik();
   });
 
+  // Validasi format URL Web App, kembalikan pesan galat spesifik atau null jika OK
+  function validasiURLWebApp() {
+    const url = CONFIG.WEB_APP_URL || '';
+    if (!url || url === 'MASUKKAN_URL_WEB_APP_DI_SINI') {
+      return 'URL Web App belum diisi. Buka js/config.js dan ganti teks MASUKKAN_URL_WEB_APP_DI_SINI dengan URL deployment Anda.';
+    }
+    if (url.indexOf('script.google.com/macros') === -1) {
+      return 'URL tidak terlihat sebagai URL Apps Script. Pastikan berbentuk https://script.google.com/macros/d/.../exec';
+    }
+    if (url.indexOf('/dev') !== -1) {
+      return 'Anda memakai URL /dev (mode uji). URL ini hanya bisa diakses saat login ke akun Google. Gunakan URL /exec dari Deploy > New deployment > Web app.';
+    }
+    if (url.indexOf('/edit') !== -1) {
+      return 'Anda memakai URL editor (/edit), bukan URL deployment. Gunakan URL /exec dari Deploy > New deployment > Web app.';
+    }
+    if (url.indexOf('/exec') === -1) {
+      return 'URL tidak berakhiran /exec. Pastikan memakai URL deployment yang berakhiran /exec.';
+    }
+    return null;
+  }
+
   async function muatDataPublik() {
     tampilkanMemuat(true);
+    // Cek URL dulu sebelum mencoba fetch
+    const galatURL = validasiURLWebApp();
+    if (galatURL) {
+      tampilkanError(galatURL);
+      tampilkanMemuat(false);
+      return;
+    }
     try {
       const resp = await panggilAPI('ambilDataPublik', {});
       if (resp.ok && resp.data) {
@@ -71,12 +113,65 @@
         terapPengaturan();
         renderSemua();
       } else {
-        tampilkanError('Gagal memuat data layanan. Periksa koneksi internet lalu muat ulang halaman.');
+        tampilkanError(resp.error || 'Gagal memuat data layanan. Jalankan Tes Koneksi untuk diagnosis.');
       }
     } catch (e) {
-      tampilkanError('Tidak bisa terhubung ke server. Pastikan js/config.js sudah diisi URL Web App, lalu muat ulang.');
+      tampilkanError('Tidak bisa terhubung ke server. ' + String(e.message || e) + ' BukaTes Koneksi di beranda untuk diagnosis detail.');
     }
     tampilkanMemuat(false);
+  }
+
+  // Tes koneksi server dengan diagnosis spesifik
+  async function tesKoneksiServer() {
+    const hasil = document.getElementById('hasil-tes-koneksi');
+    if (!hasil) return;
+    hasil.hidden = false;
+    hasil.className = 'hasil-tes-koneksi memuat';
+    hasil.innerHTML = '<p>Memeriksa koneksi...</p>';
+
+    // 1. Validasi URL
+    const galatURL = validasiURLWebApp();
+    if (galatURL) {
+      hasil.className = 'hasil-tes-koneksi galat';
+      hasil.innerHTML = '<p><strong>&#10060; URL bermasalah</strong></p><p>' + escapeHtml(galatURL) + '</p>';
+      return;
+    }
+
+    // 2. Tes fetch ke server
+    hasil.innerHTML = '<p>URL terlihat benar. Menghubungi server...</p>';
+    try {
+      const resp = await panggilAPI('ambilDataPublik', {});
+      if (resp.ok && resp.data) {
+        const namaSekolah = (resp.data.pengaturan && resp.data.pengaturan.namaSekolah) || '(belum diisi)';
+        const jumlahGuru = (resp.data.guru || []).length;
+        const jumlahKategori = (resp.data.kategori || []).length;
+        hasil.className = 'hasil-tes-koneksi sukses';
+        hasil.innerHTML = '<p><strong>&#9989; Koneksi berhasil!</strong></p>' +
+          '<p>Server merespons dengan benar. Data terbaca:</p>' +
+          '<ul><li>Nama sekolah: ' + escapeHtml(namaSekolah) + '</li>' +
+          '<li>Guru aktif: ' + jumlahGuru + '</li>' +
+          '<li>Kategori: ' + jumlahKategori + '</li></ul>' +
+          '<p>Jika form curhat masih tidak tersimpan, buka Console browser (F12) untuk lihat log detail.</p>';
+      } else if (resp.error) {
+        hasil.className = 'hasil-tes-koneksi galat';
+        hasil.innerHTML = '<p><strong>&#9888;&#65039; Server merespons tapi ada error</strong></p>' +
+          '<p>Pesan error: ' + escapeHtml(resp.error) + '</p>' +
+          '<p>Kemungkinan: fungsi setup() belum dijalankan, atau ada galat di Code.gs. Cek Execution log di editor Apps Script.</p>';
+      } else {
+        hasil.className = 'hasil-tes-koneksi galat';
+        hasil.innerHTML = '<p><strong>&#9888;&#65039; Format respons tidak dikenal</strong></p>' +
+          '<p>Server merespons tapi bukan format yang diharapkan. Pastikan Code.gs sudah diperbarui dengan versi terbaru.</p>';
+      }
+    } catch (e) {
+      hasil.className = 'hasil-tes-koneksi galat';
+      hasil.innerHTML = '<p><strong>&#10060; Tidak bisa terhubung ke server</strong></p>' +
+        '<p>Error: ' + escapeHtml(String(e.message || e)) + '</p>' +
+        '<p><strong>Periksa hal berikut:</strong></p>' +
+        '<ol><li>Deployment Web App: pastikan <em>Who has access</em> = <strong>Anyone</strong> (bukan "Anyone with Google account").</li>' +
+        '<li><em>Execute as</em> = <strong>Me</strong>.</li>' +
+        '<li>Jika baru mengubah Code.gs, buat <em>New deployment</em> baru (versi lama tidak otomatis terbarui).</li>' +
+        '<li>Buka Console browser (F12 > Console) untuk log detail.</li></ol>';
+    }
   }
 
   // ===== Terap Pengaturan =====
@@ -301,6 +396,12 @@
         navigasiKe(target.dataset.halamanTujuan);
       }
     });
+
+    // Tombol Tes Koneksi
+    const btnTes = document.getElementById('btn-tes-koneksi');
+    if (btnTes) {
+      btnTes.addEventListener('click', tesKoneksiServer);
+    }
 
     // Keluar Cepat
     document.getElementById('btn-keluar-cepat').addEventListener('click', function () {
@@ -816,10 +917,12 @@
       if (resp.ok && resp.data && resp.data.kode) {
         tampilkanHasilKirim(resp.data.kode, resp.data.bahaya);
       } else {
-        tampilkanToast(resp.error || 'Gagal mengirim. Coba lagi.', 'error');
+        console.error('[BK] Kirim ditolak server:', resp);
+        tampilkanToast(resp.error || 'Gagal mengirim. Jalankan Tes Koneksi di beranda.', 'error');
       }
     } catch (e) {
-      tampilkanToast('Tidak bisa terhubung ke server. Coba lagi.', 'error');
+      console.error('[BK] Kirim error:', e);
+      tampilkanToast('Tidak bisa terhubung ke server. ' + String(e.message || e).slice(0, 80) + ' Buka Tes Koneksi di beranda.', 'error');
     }
     tampilkanMemuat(false);
   }
@@ -929,9 +1032,11 @@
     toast.textContent = pesan;
     toast.className = 'toast' + (tipe ? ' ' + tipe : '');
     toast.hidden = false;
+    // Error dan peringatan tampil lebih lama agar bisa dibaca
+    const durasi = (tipe === 'error' || tipe === 'peringatan') ? 6000 : 3500;
     setTimeout(function () {
       toast.hidden = true;
-    }, 3500);
+    }, durasi);
   }
 
   function tampilkanError(pesan) {
@@ -1013,5 +1118,13 @@
   function escapeAttr(teks) {
     return escapeHtml(teks);
   }
+
+  // Tangani error yang tidak tertangkap
+  window.addEventListener('unhandledrejection', function (e) {
+    console.error('[BK] Unhandled rejection:', e.reason);
+  });
+
+  // Expose fungsi tes koneksi agar bisa dipanggil dari Console browser (F12)
+  window.tesKoneksiBK = tesKoneksiServer;
 
 })();
