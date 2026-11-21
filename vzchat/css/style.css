@@ -1181,28 +1181,31 @@ body {
   border-radius: 14px;
   padding: 20px;
   display: flex;
-  gap: 14px;
+  gap: 16px;
+  align-items: stretch;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .foto-guru {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+  width: 100px;
+  align-self: stretch;
+  min-height: 110px;
+  border-radius: 12px;
   object-fit: cover;
   background-color: var(--primer-ringan);
   flex-shrink: 0;
 }
 
 .foto-guru-placeholder {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
+  width: 100px;
+  align-self: stretch;
+  min-height: 110px;
+  border-radius: 12px;
   background-color: var(--primer-ringan);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 40px;
   flex-shrink: 0;
 }
 
