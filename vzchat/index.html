@@ -222,6 +222,17 @@
               <textarea id="input-pesan" name="pesan" maxlength="2000" rows="6" placeholder="Tulis apa pun yang ingin kamu sampaikan. Bebas, tidak ada yang akan menghakimi." required></textarea>
               <div class="penghitung-karakter"><span id="hitung-pesan">0</span>/2000 karakter</div>
             </div>
+            <div class="grup-input">
+              <label>Lampirkan bukti (opsional)</label>
+              <p class="petunjuk-lampiran">Boleh lampirkan foto atau dokumen sebagai bukti. Maksimal 3 file, tiap file maksimal 2MB. Format gambar (JPG, PNG) atau PDF.</p>
+              <label for="input-lampiran" class="zona-upload">
+                <span class="ikon-upload" aria-hidden="true">&#128206;</span>
+                <span class="teks-upload">Pilih File</span>
+                <small>Klik untuk memilih foto atau dokumen</small>
+              </label>
+              <input type="file" id="input-lampiran" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf" multiple hidden>
+              <div class="daftar-lampiran" id="daftar-lampiran" aria-live="polite"></div>
+            </div>
             <div class="peringatan-bahaya" id="peringatan-bahaya" hidden>
               <p class="judul-peringatan">Kami peduli padamu</p>
               <p>Terdengar kamu sedang menghadapi hal yang sangat berat. Kamu tidak sendirian. Pesanmu tetap akan terkirim ke guru BK dan ditandai penting. Jika butuh bantuan segera, hubungi kontak darurat di bawah ini:</p>
