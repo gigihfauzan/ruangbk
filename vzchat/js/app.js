@@ -336,7 +336,10 @@
     const jenjang = document.querySelector('input[name="jenjang"]:checked');
     select.innerHTML = '<option value="">Pilih kelas...</option>';
     if (!jenjang) return;
-    const kelasCocok = semuaKelas.filter(function (k) { return k.Jenjang === jenjang.value; });
+    // Bandingkan sebagai string — Google Sheet bisa menyimpan jenjang sebagai angka (7)
+    // sedangkan radio button mengirim string ('7'), jadi gunakan String() agar cocok.
+    const jenjangStr = String(jenjang.value);
+    const kelasCocok = semuaKelas.filter(function (k) { return String(k.Jenjang) === jenjangStr; });
     kelasCocok.forEach(function (k) {
       const opt = document.createElement('option');
       opt.value = k.Kelas;
