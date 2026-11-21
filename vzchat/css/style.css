@@ -698,6 +698,12 @@ body {
 }
 
 .grup-input input[type="text"],
+.grup-input input[type="password"],
+.grup-input input[type="search"],
+.grup-input input[type="number"],
+.grup-input input[type="month"],
+.grup-input input[type="email"],
+.grup-input input[type="tel"],
 .grup-input select,
 .grup-input textarea {
   width: 100%;
