@@ -573,6 +573,8 @@
     const el = document.createElement('div');
     el.className = 'kartu-editor';
     el.dataset.idx = idx;
+    // ID unik untuk input file agar label "for" bisa membuka file picker
+    const fotoInputId = 'ed-guru-foto-input-' + idx + '-' + Date.now();
     el.innerHTML =
       '<div class="grid-form-2kol">' +
         '<div class="grup-input"><label>Nama</label><input type="text" class="ed-guru-nama" value="' + escapeAttr(g.Nama || '') + '" maxlength="100"></div>' +
@@ -586,8 +588,8 @@
       '<div class="grup-input"><label>Foto</label>' +
         '<div class="zona-upload-mini">' +
           (g.Foto ? '<img class="pratinjau-gambar-kecil" src="' + escapeAttr(g.Foto) + '" alt="">' : '') +
-          '<label class="zona-upload zona-upload-padat"><span aria-hidden="true">&#128247;</span> Pilih Foto</label>' +
-          '<input type="file" class="ed-guru-foto" accept="image/*" hidden>' +
+          '<label for="' + fotoInputId + '" class="zona-upload zona-upload-padat"><span aria-hidden="true">&#128247;</span> Pilih Foto</label>' +
+          '<input type="file" id="' + fotoInputId + '" class="ed-guru-foto" accept="image/*" hidden>' +
           '<input type="hidden" class="ed-guru-foto-data" value="' + escapeAttr(g.Foto || '') + '">' +
           '<small class="catatan-gambar">Maks 250x250 piksel.</small>' +
         '</div>' +
