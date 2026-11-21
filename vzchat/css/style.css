@@ -732,6 +732,136 @@ body {
   margin-top: 4px;
 }
 
+/* Lampiran file */
+.petunjuk-lampiran {
+  font-size: 13px;
+  color: var(--teks-terang);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.zona-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 2px dashed var(--primer);
+  border-radius: 12px;
+  padding: 20px 16px;
+  cursor: pointer;
+  background-color: var(--primer-sangat-ringan);
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s;
+  min-height: 88px;
+  justify-content: center;
+}
+
+.zona-upload:hover {
+  background-color: var(--primer-ringan);
+  border-color: var(--primer-gelap);
+}
+
+.zona-upload .ikon-upload {
+  font-size: 28px;
+}
+
+.zona-upload .teks-upload {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--primer-gelap);
+}
+
+.zona-upload small {
+  font-size: 13px;
+  color: var(--teks-terang);
+}
+
+.daftar-lampiran {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.item-lampiran {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--latar-kartu);
+  border: 1px solid var(--batas);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.pratinjau-lampiran {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: var(--primer-ringan);
+  flex-shrink: 0;
+}
+
+.pratinjau-lampiran-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: var(--primer-ringan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.info-lampiran {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-lampiran .nama-lampiran {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--teks);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-lampiran .ukuran-lampiran {
+  font-size: 12px;
+  color: var(--teks-terang);
+}
+
+.btn-hapus-lampiran {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--bahaya);
+  cursor: pointer;
+  padding: 4px 8px;
+  min-height: 36px;
+  min-width: 36px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.btn-hapus-lampiran:hover {
+  background-color: var(--bahaya-ringan);
+}
+
+.lampiran-galat {
+  font-size: 13px;
+  color: var(--bahaya);
+  margin-top: 4px;
+}
+
+.lampiran-diproses {
+  font-size: 13px;
+  color: var(--teks-terang);
+  margin-top: 4px;
+}
+
 /* Peringatan bahaya di form */
 .peringatan-bahaya {
   background-color: var(--bahaya-ringan);
