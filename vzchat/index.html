@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Layanan curhat dan konseling BK untuk siswa SMP. Anonim dan aman.">
+  <meta name="theme-color" content="#0d9488">
+  <title>Layanan BK SMP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-tema="teal">
+
+  <!-- Tombol Keluar Cepat (selalu terlihat) -->
+  <button id="btn-keluar-cepat" class="btn-keluar-cepat" type="button" title="Keluar dari halaman ini dengan cepat" aria-label="Keluar cepat dari halaman ini">
+    <span aria-hidden="true">&#10005;</span>
+    <span class="teks-keluar">Keluar Cepat</span>
+  </button>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div class="header-dalam">
+      <div class="identitas-sekolah">
+        <img id="logo-sekolah" class="logo-sekolah" alt="" hidden>
+        <div class="nama-sekolah">
+          <strong id="nama-sekolah-utama">Layanan BK SMP</strong>
+          <small id="nama-singkat-sekolah"></small>
+        </div>
+      </div>
+      <nav class="nav-utama" aria-label="Navigasi utama">
+        <button class="taut-nav aktif" data-halaman="beranda" type="button">Beranda</button>
+        <button class="taut-nav" data-halaman="guru" type="button">Guru BK</button>
+        <button class="taut-nav" data-halaman="layanan" type="button">Layanan</button>
+        <button class="taut-nav" data-halaman="faq" type="button">FAQ</button>
+        <button class="taut-nav" data-halaman="privasi" type="button">Privasi</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Konten Utama -->
+  <main class="main" role="main">
+
+    <!-- ===== Halaman Beranda ===== -->
+    <section id="halaman-beranda" class="halaman aktif" aria-label="Beranda">
+      <div class="hero" id="hero-banner">
+        <div class="hero-dalam">
+          <span class="hero-sapa" aria-hidden="true">Halo!</span>
+          <h1 id="teks-sambutan-judul">Selamat datang di Layanan BK</h1>
+          <p id="teks-sambutan-isi" class="teks-sambutan"></p>
+          <div class="hero-aksi">
+            <button class="btn-primer btn-besar" data-halaman-tujuan="curhat" type="button">
+              <span aria-hidden="true">&#9999;&#65039;</span> Mulai Curhat
+            </button>
+            <button class="btn-sekunder btn-besar" data-halaman-tujuan="cek" type="button">
+              <span aria-hidden="true">&#128270;</span> Cek Balasan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="kontainer">
+        <h2 class="judul-bagian">Layanan Kami</h2>
+        <div class="grid-layanan" id="ringkasan-layanan" aria-live="polite">
+          <p class="keadaan-kosong">Memuat layanan...</p>
+        </div>
+      </div>
+
+      <div class="kontainer">
+        <div class="info-cepat">
+          <div class="kartu-info">
+            <span class="ikon-info" aria-hidden="true">&#128340;</span>
+            <div>
+              <h3>Jam Layanan</h3>
+              <p id="jam-layanan-isi">-</p>
+            </div>
+          </div>
+          <div class="kartu-info">
+            <span class="ikon-info" aria-hidden="true">&#128197;</span>
+            <div>
+              <h3>Tahun Ajaran</h3>
+              <p id="periode-isi">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Halaman Curhat (Form Bertahap) ===== -->
+    <section id="halaman-curhat" class="halaman" aria-label="Formulir Curhat">
+      <div class="kontainer form-kontainer">
+        <button class="btn-teks" data-halaman-tujuan="beranda" type="button">&#8592; Kembali ke beranda</button>
+        <h2 class="judul-form">Curhat Yuk!</h2>
+        <p class="subjudul-form">Ceritakan apa yang kamu rasakan. Guru BK siap mendengarkan tanpa menghakimi.</p>
+
+        <div class="indikator-langkah">
+          <div class="progres-bar" role="progressbar" aria-valuemin="1" aria-valuemax="9" aria-valuenow="1">
+            <div class="progres-isi" id="progres-isi"></div>
+          </div>
+          <span class="nomor-langkah" id="nomor-langkah">Langkah 1</span>
+        </div>
+
+        <form id="form-curhat" novalidate>
+          <!-- Kolom jebakan (honeypot) - tersembunyi, jangan diisi -->
+          <div class="kolom-jebakan" aria-hidden="true">
+            <label>Jangan isi kolom ini
+              <input type="text" name="website" tabindex="-1" autocomplete="off">
+            </label>
+          </div>
+          <input type="hidden" name="mulai" id="input-mulai">
+
+          <!-- Langkah 1: Mode -->
+          <div class="langkah aktif" data-langkah="1">
+            <h3 class="judul-langkah">Bagaimana kamu ingin curhat?</h3>
+            <div class="grid-pilihan">
+              <label class="kartu-pilihan">
+                <input type="radio" name="anonim" value="true" required>
+                <span class="isi-kartu-pilihan">
+                  <span class="ikon-pilihan" aria-hidden="true">&#128374;&#65039;</span>
+                  <strong>Anonim</strong>
+                  <small>Tanpa nama, tanpa kelas</small>
+                </span>
+              </label>
+              <label class="kartu-pilihan">
+                <input type="radio" name="anonim" value="false" required>
+                <span class="isi-kartu-pilihan">
+                  <span class="ikon-pilihan" aria-hidden="true">&#128522;</span>
+                  <strong>Sertakan Identitas</strong>
+                  <small>Guru BK tahu namamu</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Langkah 2: Jenjang -->
+          <div class="langkah" data-langkah="2">
+            <h3 class="judul-langkah">Kamu jenjang berapa?</h3>
+            <p class="petunjuk-langkah">Wajib dipilih untuk semua.</p>
+            <div class="grid-pilihan">
+              <label class="kartu-pilihan">
+                <input type="radio" name="jenjang" value="7" required>
+                <span class="isi-kartu-pilihan"><strong>Kelas 7</strong></span>
+              </label>
+              <label class="kartu-pilihan">
+                <input type="radio" name="jenjang" value="8" required>
+                <span class="isi-kartu-pilihan"><strong>Kelas 8</strong></span>
+              </label>
+              <label class="kartu-pilihan">
+                <input type="radio" name="jenjang" value="9" required>
+                <span class="isi-kartu-pilihan"><strong>Kelas 9</strong></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Langkah 3: Kelas & Nama (kondisional) -->
+          <div class="langkah" data-langkah="3">
+            <h3 class="judul-langkah">Ceritakan identitasmu</h3>
+            <div class="grup-input">
+              <label for="input-kelas">Kelas <span class="wajib">*</span></label>
+              <select id="input-kelas" name="kelas">
+                <option value="">Pilih kelas...</option>
+              </select>
+            </div>
+            <div class="grup-input">
+              <label for="input-nama">Nama kamu <span class="wajib">*</span></label>
+              <input type="text" id="input-nama" name="nama" maxlength="100" placeholder="Tulis namamu" autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Langkah 4: Kategori -->
+          <div class="langkah" data-langkah="4">
+            <h3 class="judul-langkah">Apa yang ingin kamu curhatkan?</h3>
+            <div class="grid-pilihan" id="grid-kategori" aria-live="polite">
+              <p class="keadaan-kosong">Memuat kategori...</p>
+            </div>
+          </div>
+
+          <!-- Langkah 5: Urgensi -->
+          <div class="langkah" data-langkah="5">
+            <h3 class="judul-langkah">Seberapa mendesak?</h3>
+            <p class="petunjuk-langkah">Pilih seberapa cepat kamu butuh bantuan.</p>
+            <div class="grid-pilihan">
+              <label class="kartu-pilihan">
+                <input type="radio" name="urgensi" value="rendah" required>
+                <span class="isi-kartu-pilihan">
+                  <strong>Rendah</strong>
+                  <small>Bisa menunggu</small>
+                </span>
+              </label>
+              <label class="kartu-pilihan">
+                <input type="radio" name="urgensi" value="sedang" required>
+                <span class="isi-kartu-pilihan">
+                  <strong>Sedang</strong>
+                  <small>Dalam beberapa hari</small>
+                </span>
+              </label>
+              <label class="kartu-pilihan kartu-urgensi-tinggi">
+                <input type="radio" name="urgensi" value="tinggi" required>
+                <span class="isi-kartu-pilihan">
+                  <strong>Tinggi</strong>
+                  <small>Butuh segera</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Langkah 6: Guru Tujuan -->
+          <div class="langkah" data-langkah="6">
+            <h3 class="judul-langkah">Ingin ke guru siapa?</h3>
+            <p class="petunjuk-langkah">Pilih guru BK tujuanmu, atau biarkan siapa saja.</p>
+            <div class="grid-pilihan" id="grid-guru" aria-live="polite">
+              <p class="keadaan-kosong">Pilih jenjang dulu...</p>
+            </div>
+          </div>
+
+          <!-- Langkah 7: Pesan -->
+          <div class="langkah" data-langkah="7">
+            <h3 class="judul-langkah">Tuliskan pesanmu</h3>
+            <div class="grup-input">
+              <label for="input-pesan">Ceritakan apa yang kamu rasakan <span class="wajib">*</span></label>
+              <textarea id="input-pesan" name="pesan" maxlength="2000" rows="6" placeholder="Tulis apa pun yang ingin kamu sampaikan. Bebas, tidak ada yang akan menghakimi." required></textarea>
+              <div class="penghitung-karakter"><span id="hitung-pesan">0</span>/2000 karakter</div>
+            </div>
+            <div class="peringatan-bahaya" id="peringatan-bahaya" hidden>
+              <p class="judul-peringatan">Kami peduli padamu</p>
+              <p>Terdengar kamu sedang menghadapi hal yang sangat berat. Kamu tidak sendirian. Pesanmu tetap akan terkirim ke guru BK dan ditandai penting. Jika butuh bantuan segera, hubungi kontak darurat di bawah ini:</p>
+              <div class="kontak-darurat-cepat" id="kontak-darurat-cepat"></div>
+            </div>
+          </div>
+
+          <!-- Langkah 8: Preferensi -->
+          <div class="langkah" data-langkah="8">
+            <h3 class="judul-langkah">Bagaimana kamu ingin dibalas?</h3>
+            <div class="grid-pilihan">
+              <label class="kartu-pilihan">
+                <input type="radio" name="preferensiBalasan" value="website" required>
+                <span class="isi-kartu-pilihan">
+                  <span class="ikon-pilihan" aria-hidden="true">&#128187;</span>
+                  <strong>Lewat Website</strong>
+                  <small>Balas di sini dengan kode tiket</small>
+                </span>
+              </label>
+              <label class="kartu-pilihan">
+                <input type="radio" name="preferensiBalasan" value="langsung" required>
+                <span class="isi-kartu-pilihan">
+                  <span class="ikon-pilihan" aria-hidden="true">&#129309;</span>
+                  <strong>Bertemu Langsung</strong>
+                  <small>Guru BK menghubungimu</small>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Langkah 9: Ringkasan -->
+          <div class="langkah" data-langkah="9">
+            <h3 class="judul-langkah">Periksa dulu, lalu kirim</h3>
+            <div class="ringkasan" id="ringkasan-kiriman" aria-live="polite"></div>
+            <div class="catatan-kejujuran">
+              <p><strong>Sebelum kamu kirim, ketahui ini:</strong></p>
+              <p>Pesanmu diterima oleh guru BK dan dapat diteruskan ke guru yang kamu pilih. Kerahasiaan dijaga, tetapi ada batasnya: jika ada bahaya bagi dirimu atau orang lain, atau terjadi kekerasan terhadap anak, guru BK wajib mengambil tindakan untuk melindungimu.</p>
+            </div>
+          </div>
+        </form>
+
+        <!-- Navigasi langkah -->
+        <div class="nav-langkah">
+          <button type="button" class="btn-sekunder" id="btn-kembali" disabled>&#8592; Kembali</button>
+          <button type="button" class="btn-primer" id="btn-lanjut">Lanjut &#8594;</button>
+          <button type="button" class="btn-primer btn-kirim" id="btn-kirim" hidden>Kirim Curhatan</button>
+        </div>
+      </div>
+
+      <!-- Layar hasil kirim -->
+      <div class="hasil-kirim" id="hasil-kirim" hidden>
+        <div class="kartu-hasil">
+          <div class="ikon-sukses" aria-hidden="true">&#9989;</div>
+          <h2>Pesanmu Terkirim!</h2>
+          <p>Guru BK telah menerima curhatanmu. Simpan kode tiket di bawah ini baik-baik.</p>
+          <div class="kotak-kode">
+            <p class="label-kode">Kode Tiketmu:</p>
+            <code id="kode-tiket-nilai" class="nilai-kode"></code>
+            <button type="button" class="btn-primer" id="btn-salin-kode">Salin Kode</button>
+          </div>
+          <p class="penjelasan-kode">Kode ini adalah <strong>satu-satunya cara</strong> untuk melihat balasan dari guru BK. Tuliskan di tempat aman atau foto layar ini sekarang.</p>
+          <div class="peringatan-bahaya-hasil" id="peringatan-bahaya-hasil" hidden></div>
+          <div class="aksi-hasil">
+            <button type="button" class="btn-sekunder" data-halaman-tujuan="cek">Cek Balasan</button>
+            <button type="button" class="btn-sekunder" id="btn-curhat-lagi">Curhat Lagi</button>
+            <button type="button" class="btn-teks" data-halaman-tujuan="beranda">Ke Beranda</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Halaman Cek Balasan ===== -->
+    <section id="halaman-cek" class="halaman" aria-label="Cek Balasan">
+      <div class="kontainer-sempit">
+        <h2>Cek Balasan</h2>
+        <p>Masukkan kode tiket yang kamu dapat saat mengirim curhatan.</p>
+        <form id="form-cek">
+          <div class="grup-input">
+            <label for="input-kode">Kode Tiket (10 huruf/angka) <span class="wajib">*</span></label>
+            <input type="text" id="input-kode" name="kode" maxlength="10" placeholder="Contoh: ABCDE2345F" autocomplete="off" style="text-transform:uppercase" required>
+          </div>
+          <button type="submit" class="btn-primer btn-lebar">Cek Sekarang</button>
+        </form>
+        <div class="hasil-cek" id="hasil-cek" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- ===== Halaman Guru BK ===== -->
+    <section id="halaman-guru" class="halaman" aria-label="Profil Guru BK">
+      <div class="kontainer">
+        <h2 class="judul-bagian">Profil Guru BK</h2>
+        <div class="grid-guru" id="daftar-guru" aria-live="polite">
+          <p class="keadaan-kosong">Memuat daftar guru...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Halaman Layanan ===== -->
+    <section id="halaman-layanan" class="halaman" aria-label="Layanan BK">
+      <div class="kontainer">
+        <h2 class="judul-bagian">Layanan BK</h2>
+        <div class="grid-layanan" id="daftar-layanan" aria-live="polite">
+          <p class="keadaan-kosong">Memuat layanan...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Halaman FAQ ===== -->
+    <section id="halaman-faq" class="halaman" aria-label="Pertanyaan Sering Diajukan">
+      <div class="kontainer-sempit">
+        <h2 class="judul-bagian">Pertanyaan yang Sering Diajukan</h2>
+        <div class="daftar-faq" id="daftar-faq" aria-live="polite">
+          <p class="keadaan-kosong">Memuat FAQ...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Halaman Privasi ===== -->
+    <section id="halaman-privasi" class="halaman" aria-label="Privasi dan Batas Kerahasiaan">
+      <div class="kontainer-sempit">
+        <h2 class="judul-bagian">Privasi dan Batas Kerahasiaan</h2>
+        <div class="kartu-konten" id="konten-privasi" aria-live="polite">
+          <p class="keadaan-kosong">Memuat kebijakan privasi...</p>
+        </div>
+        <div class="kartu-konten kartu-darurat" id="kartu-kontak-darurat">
+          <h3>&#9888;&#65039; Kontak Darurat</h3>
+          <div id="kontak-darurat-isi" class="konten-darurat"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer-dalam">
+      <div class="footer-info">
+        <strong id="footer-nama-sekolah">Layanan BK SMP</strong>
+        <span id="footer-alamat"></span>
+        <span id="footer-kontak"></span>
+      </div>
+      <div class="footer-catatan">
+        <p>Layanan ini menjaga kerahasiaan dan kesehatan mental siswa. Jika darurat, hubungi kontak darurat.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Overlay Memuat -->
+  <div id="overlay-memuat" class="overlay-memuat" hidden>
+    <div class="kotak-memuat">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Memuat...</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
