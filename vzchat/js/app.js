@@ -6,8 +6,17 @@
   let dataPublik = null;
   let langkahSaatIni = 1;
   let modeAnonim = null; // null | true | false
+  let lampiranTerpilih = []; // array {nama, tipe, data, ukuran}
 
   // ===== Konstanta =====
+
+  // Batas lampiran
+  const MAKS_LAMPIRAN = 3;
+  const MAKS_UKURAN_LAMPIRAN = 2 * 1024 * 1024; // 2 MB
+  const MAKS_LEBAR_GAMBAR = 1200; // piksel
+  const KUALITAS_GAMBAR = 0.7;
+  const TIPE_GAMBAR_DIIZINKAN = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const TIPE_DOKUMEN_DIIZINKAN = ['application/pdf'];
 
   // Kata kunci bahaya (harus sama dengan di server)
   const KATA_BAHAYA = [
@@ -226,6 +235,7 @@
 
   function renderKelas() {
     const select = document.getElementById('input-kelas');
+    if (!dataPublik) return;
     const semuaKelas = dataPublik.kelas || [];
     // Ambil jenjang yang dipilih
     const jenjang = document.querySelector('input[name="jenjang"]:checked');
@@ -242,6 +252,7 @@
 
   function renderGuruTujuan() {
     const wadah = document.getElementById('grid-guru');
+    if (!dataPublik) return;
     const semuaGuru = dataPublik.guru || [];
     const jenjang = document.querySelector('input[name="jenjang"]:checked');
     if (!jenjang) {
@@ -317,6 +328,13 @@
     pesanInput.addEventListener('input', function () {
       setText('hitung-pesan', String(pesanInput.value.length));
       deteksiBahayaForm(pesanInput.value);
+    });
+
+    // Lampiran: proses file yang dipilih
+    document.getElementById('input-lampiran').addEventListener('change', function (e) {
+      prosesFileTerpilih(e.target.files);
+      // Reset input agar bisa memilih file yang sama lagi jika dihapus lalu dipilih ulang
+      this.value = '';
     });
 
     // Tombol navigasi langkah
@@ -518,6 +536,182 @@
     peringatan.hidden = !terdeteksi;
   }
 
+  // ===== Pemrosesan Lampiran File =====
+
+  // Proses file yang dipilih siswa
+  async function prosesFileTerpilih(daftarFile) {
+    const wadah = document.getElementById('daftar-lampiran');
+    for (let i = 0; i < daftarFile.length; i++) {
+      if (lampiranTerpilih.length >= MAKS_LAMPIRAN) {
+        tampilkanToast('Maksimal ' + MAKS_LAMPIRAN + ' file.', 'peringatan');
+        break;
+      }
+      const file = daftarFile[i];
+      // Validasi tipe
+      const tipe = file.type || '';
+      const isGambar = TIPE_GAMBAR_DIIZINKAN.indexOf(tipe) !== -1;
+      const isDokumen = TIPE_DOKUMEN_DIIZINKAN.indexOf(tipe) !== -1;
+      if (!isGambar && !isDokumen) {
+        tampilkanToast('Tipe file tidak didukung: ' + file.name, 'error');
+        continue;
+      }
+      // Untuk dokumen PDF, cek ukuran langsung
+      if (isDokumen && file.size > MAKS_UKURAN_LAMPIRAN) {
+        tampilkanToast('File terlalu besar (maks 2MB): ' + file.name, 'error');
+        continue;
+      }
+      // Tampilkan indikator pemrosesan
+      const idSementara = 'lampiran-proses-' + Date.now() + '-' + i;
+      const elProses = document.createElement('div');
+      elProses.className = 'item-lampiran';
+      elProses.id = idSementara;
+      elProses.innerHTML = '<div class="pratinjau-lampiran-placeholder" aria-hidden="true">&#8987;</div>' +
+        '<div class="info-lampiran"><div class="nama-lampiran">' + escapeHtml(file.name) + '</div>' +
+        '<div class="lampiran-diproses">Memproses...</div></div>';
+      wadah.appendChild(elProses);
+
+      try {
+        let hasil;
+        if (isGambar) {
+          hasil = await kompresGambar(file);
+        } else {
+          hasil = await bacaDokumen(file);
+        }
+        if (hasil) {
+          lampiranTerpilih.push(hasil);
+          elProses.remove();
+          renderDaftarLampiran();
+        } else {
+          elProses.remove();
+          tampilkanToast('Gagal memproses: ' + file.name, 'error');
+        }
+      } catch (e) {
+        elProses.remove();
+        tampilkanToast('Gagal memproses: ' + file.name, 'error');
+      }
+    }
+  }
+
+  // Kompres gambar: ubah ukuran ke maks MAKS_LEBAR_GAMBAR, konversi ke JPEG
+  function kompresGambar(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          let lebar = img.width;
+          let tinggi = img.height;
+          if (lebar > MAKS_LEBAR_GAMBAR) {
+            tinggi = Math.round(tinggi * (MAKS_LEBAR_GAMBAR / lebar));
+            lebar = MAKS_LEBAR_GAMBAR;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = lebar;
+          canvas.height = tinggi;
+          const ctx = canvas.getContext('2d');
+          // Latar putih untuk PNG transparan (agar JPEG tidak hitam)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, lebar, tinggi);
+          ctx.drawImage(img, 0, 0, lebar, tinggi);
+          const dataUrl = canvas.toDataURL('image/jpeg', KUALITAS_GAMBAR);
+          // Cek ukuran hasil (estimasi dari panjang base64)
+          const ukuranEstimasi = Math.floor((dataUrl.split(',')[1] || '').length * 3 / 4);
+          if (ukuranEstimasi > MAKS_UKURAN_LAMPIRAN) {
+            // Jika masih terlalu besar, coba kualitas lebih rendah
+            const dataUrlKecil = canvas.toDataURL('image/jpeg', 0.4);
+            const ukuranKecil = Math.floor((dataUrlKecil.split(',')[1] || '').length * 3 / 4);
+            if (ukuranKecil > MAKS_UKURAN_LAMPIRAN) {
+              resolve(null);
+              return;
+            }
+            resolve({
+              nama: gantiEkstensi(file.name, 'jpg'),
+              tipe: 'image/jpeg',
+              data: dataUrlKecil,
+              ukuran: ukuranKecil
+            });
+            return;
+          }
+          resolve({
+            nama: gantiEkstensi(file.name, 'jpg'),
+            tipe: 'image/jpeg',
+            data: dataUrl,
+            ukuran: ukuranEstimasi
+          });
+        };
+        img.onerror = function () { reject(new Error('Gagal memuat gambar')); };
+        img.src = e.target.result;
+      };
+      reader.onerror = function () { reject(new Error('Gagal membaca file')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Baca dokumen PDF sebagai data URI
+  function bacaDokumen(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        resolve({
+          nama: file.name,
+          tipe: file.type || 'application/pdf',
+          data: e.target.result,
+          ukuran: file.size
+        });
+      };
+      reader.onerror = function () { reject(new Error('Gagal membaca file')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Ganti ekstensi nama file
+  function gantiEkstensi(nama, ekstensiBaru) {
+    const idx = nama.lastIndexOf('.');
+    const basis = idx !== -1 ? nama.slice(0, idx) : nama;
+    return basis + '.' + ekstensiBaru;
+  }
+
+  // Format ukuran file untuk tampilan
+  function formatUkuran(byte) {
+    if (byte < 1024) return byte + ' B';
+    if (byte < 1024 * 1024) return Math.round(byte / 1024) + ' KB';
+    return (byte / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  // Tampilkan daftar lampiran yang sudah diproses
+  function renderDaftarLampiran() {
+    const wadah = document.getElementById('daftar-lampiran');
+    if (lampiranTerpilih.length === 0) {
+      wadah.innerHTML = '';
+      return;
+    }
+    wadah.innerHTML = '';
+    lampiranTerpilih.forEach(function (f, idx) {
+      const el = document.createElement('div');
+      el.className = 'item-lampiran';
+      const isGambar = f.tipe.indexOf('image/') !== -1;
+      let pratinjauHtml;
+      if (isGambar) {
+        pratinjauHtml = '<img class="pratinjau-lampiran" src="' + escapeAttr(f.data) + '" alt="">';
+      } else {
+        pratinjauHtml = '<div class="pratinjau-lampiran-placeholder" aria-hidden="true">&#128196;</div>';
+      }
+      el.innerHTML = pratinjauHtml +
+        '<div class="info-lampiran"><div class="nama-lampiran">' + escapeHtml(f.nama) + '</div>' +
+        '<div class="ukuran-lampiran">' + formatUkuran(f.ukuran) + '</div></div>' +
+        '<button type="button" class="btn-hapus-lampiran" data-idx="' + idx + '" title="Hapus" aria-label="Hapus lampiran">&times;</button>';
+      wadah.appendChild(el);
+    });
+    // Pasang event hapus
+    wadah.querySelectorAll('.btn-hapus-lampiran').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const idx = Number(btn.dataset.idx);
+        lampiranTerpilih.splice(idx, 1);
+        renderDaftarLampiran();
+      });
+    });
+  }
+
   // ===== Ringkasan =====
 
   function perbaruiRingkasan() {
@@ -552,6 +746,12 @@
     });
     html += '<div class="baris-ringkasan"><span class="label-ringkasan">Pesan</span>' +
       '<span class="nilai-ringkasan">' + escapeHtml(data.pesan.slice(0, 120)) + (data.pesan.length > 120 ? '...' : '') + '</span></div>';
+    if (lampiranTerpilih.length > 0) {
+      const namaFile = lampiranTerpilih.map(function (f) { return f.nama; }).join(', ');
+      const teksLampiran = lampiranTerpilih.length + ' file: ' + namaFile;
+      html += '<div class="baris-ringkasan"><span class="label-ringkasan">Lampiran</span>' +
+        '<span class="nilai-ringkasan">' + escapeHtml(teksLampiran) + '</span></div>';
+    }
     wadah.innerHTML = html;
   }
 
@@ -595,6 +795,10 @@
 
     tampilkanMemuat(true);
     try {
+      // Siapkan data lampiran (hanya nama, tipe, data — tanpa ukuran)
+      const lampiranPayload = lampiranTerpilih.map(function (f) {
+        return { nama: f.nama, tipe: f.tipe, data: f.data };
+      });
       const resp = await panggilAPI('kirimKiriman', {
         anonim: data.anonim,
         jenjang: data.jenjang,
@@ -606,7 +810,8 @@
         pesan: data.pesan,
         preferensiBalasan: data.preferensiBalasan,
         mulai: data.mulai,
-        website: data.website
+        website: data.website,
+        lampiran: lampiranPayload
       });
       if (resp.ok && resp.data && resp.data.kode) {
         tampilkanHasilKirim(resp.data.kode, resp.data.bahaya);
@@ -646,6 +851,8 @@
     document.querySelector('.form-kontainer').style.display = '';
     document.getElementById('hasil-kirim').hidden = true;
     document.getElementById('peringatan-bahaya').hidden = true;
+    document.getElementById('daftar-lampiran').innerHTML = '';
+    lampiranTerpilih = [];
     setText('hitung-pesan', '0');
     langkahSaatIni = 1;
     modeAnonim = null;
