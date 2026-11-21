@@ -591,7 +591,7 @@
           '<label for="' + fotoInputId + '" class="zona-upload zona-upload-padat"><span aria-hidden="true">&#128247;</span> Pilih Foto</label>' +
           '<input type="file" id="' + fotoInputId + '" class="ed-guru-foto" accept="image/*" hidden>' +
           '<input type="hidden" class="ed-guru-foto-data" value="' + escapeAttr(g.Foto || '') + '">' +
-          '<small class="catatan-gambar">Maks 250x250 piksel.</small>' +
+          '<small class="catatan-gambar">Maks 200x200 piksel.</small>' +
         '</div>' +
       '</div>' +
       '<div class="aksi-kartu-editor">' +
@@ -616,7 +616,7 @@
   async function prosesFotoGuru(file, elKartu) {
     if (!file) return;
     try {
-      const dataUri = await resizeGambar(file, 250, 250, 0.8);
+      const dataUri = await resizeGambar(file, 200, 200, 0.7);
       elKartu.querySelector('.ed-guru-foto-data').value = dataUri;
       let img = elKartu.querySelector('.pratinjau-gambar-kecil');
       if (!img) {
@@ -627,7 +627,7 @@
       img.src = dataUri;
       img.hidden = false;
     } catch (e) {
-      tampilkanToast('Gagal memproses foto.', 'error');
+      tampilkanToast(String(e.message || e), 'error');
     }
   }
 
@@ -855,23 +855,54 @@
 
   // ===== Upload Gambar (Logo & Banner) =====
 
-  function resizeGambar(file, maksLebar, maksTinggi, kualitas) {
+  // Batas aman karakter untuk sel Google Sheet (limit 50.000, kita pakai 45.000)
+  const MAKS_KARAKTER_GAMBAR = 45000;
+
+  function resizeGambar(file, maksLebar, maksTinggi, kualitasAwal, maksKarakter) {
+    maksKarakter = maksKarakter || MAKS_KARAKTER_GAMBAR;
     return new Promise(function (resolve, reject) {
       const reader = new FileReader();
       reader.onload = function (e) {
         const img = new Image();
         img.onload = function () {
+          // Fungsi bantu: generate data URI pada ukuran & kualitas tertentu
+          function buatDataUrl(w, h, kual) {
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            return canvas.toDataURL('image/jpeg', kual);
+          }
+
+          // Hitung ukuran awal dengan mempertahankan rasio
           let w = img.width, h = img.height;
           const rasio = Math.min(maksLebar / w, maksTinggi / h, 1);
           w = Math.round(w * rasio);
           h = Math.round(h * rasio);
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, w, h);
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', kualitas));
+
+          // Coba dengan kualitas awal, lalu turunkan bertahap jika melebihi batas
+          let kual = kualitasAwal;
+          let dataUrl = buatDataUrl(w, h, kual);
+          while (dataUrl.length > maksKarakter && kual > 0.2) {
+            kual = Math.round((kual - 0.1) * 10) / 10;
+            dataUrl = buatDataUrl(w, h, kual);
+          }
+
+          // Jika masih terlalu besar, perkecil dimensi bertahap
+          while (dataUrl.length > maksKarakter && w > 100 && h > 50) {
+            w = Math.round(w * 0.85);
+            h = Math.round(h * 0.85);
+            dataUrl = buatDataUrl(w, h, 0.3);
+          }
+
+          if (dataUrl.length > maksKarakter) {
+            reject(new Error('Gambar terlalu besar bahkan setelah dikompres. Coba gambar yang lebih kecil (di bawah 500KB).'));
+            return;
+          }
+          console.log('[BK-Admin] Gambar dikompres: ' + w + 'x' + h + 'px, kualitas ' + kual + ', ' + dataUrl.length + ' karakter');
+          resolve(dataUrl);
         };
         img.onerror = function () { reject(new Error('Gagal memuat gambar')); };
         img.src = e.target.result;
@@ -883,28 +914,34 @@
 
   async function prosesLogo(file) {
     if (!file) return;
+    tampilkanMemuat(true, 'Memproses logo...');
     try {
-      const dataUri = await resizeGambar(file, 300, 300, 0.8);
+      const dataUri = await resizeGambar(file, 250, 250, 0.7);
       const img = document.getElementById('pratinjau-logo');
       img.src = dataUri; img.hidden = false;
       const hidden = document.getElementById('hidden-logo');
       if (hidden) hidden.value = dataUri;
+      tampilkanToast('Logo siap. Klik Simpan untuk menyimpan.', 'sukses');
     } catch (e) {
-      tampilkanToast('Gagal memproses logo.', 'error');
+      tampilkanToast(String(e.message || e), 'error');
     }
+    tampilkanMemuat(false);
   }
 
   async function prosesBanner(file) {
     if (!file) return;
+    tampilkanMemuat(true, 'Memproses banner...');
     try {
-      const dataUri = await resizeGambar(file, 1000, 250, 0.8);
+      const dataUri = await resizeGambar(file, 800, 200, 0.5);
       const img = document.getElementById('pratinjau-banner');
       img.src = dataUri; img.hidden = false;
       const hidden = document.getElementById('hidden-banner');
       if (hidden) hidden.value = dataUri;
+      tampilkanToast('Banner siap. Klik Simpan untuk menyimpan.', 'sukses');
     } catch (e) {
-      tampilkanToast('Gagal memproses banner.', 'error');
+      tampilkanToast(String(e.message || e), 'error');
     }
+    tampilkanMemuat(false);
   }
 
   // ===== PDF Dialog =====
