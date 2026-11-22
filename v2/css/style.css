@@ -697,6 +697,12 @@ body {
   color: var(--bahaya);
 }
 
+.opsional {
+  color: var(--teks-terang);
+  font-weight: 400;
+  font-size: 13px;
+}
+
 .grup-input input[type="text"],
 .grup-input input[type="password"],
 .grup-input input[type="search"],
