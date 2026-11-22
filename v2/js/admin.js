@@ -263,6 +263,7 @@
     html += detailBaris('Jenjang', 'Kelas ' + String(k.Jenjang || '-'));
     html += detailBaris('Nama', anonim ? '(Anonim)' : escapeHtml(k.Nama || '-'));
     html += detailBaris('Kelas', anonim ? '-' : escapeHtml(String(k.Kelas || '-')));
+    html += detailBaris('No. HP', anonim ? '-' : (k.NoHP ? escapeHtml(k.NoHP) : '(tidak diisi)'));
     html += detailBaris('Kategori', escapeHtml(data.kategoriNama || k.KategoriID || '-'));
     html += detailBaris('Guru Tujuan', k.GuruTujuanID === 'Siapa saja' || !k.GuruTujuanID ? 'Siapa Saja' : escapeHtml(k.GuruTujuanID));
     html += detailBaris('Preferensi Balasan', k.PreferensiBalasan === 'website' ? 'Lewat Website' : 'Bertemu Langsung');
