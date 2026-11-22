@@ -87,7 +87,7 @@
       </div>
 
       <!-- Kartu Tes Koneksi (untuk admin/pengelola saat diagnosa) -->
-      <!-- div class="kontainer">
+      <div class="kontainer">
         <details class="kartu-tes-koneksi">
           <summary>&#128269; Tes Koneksi Server</summary>
           <div class="isi-tes-koneksi">
@@ -96,7 +96,7 @@
             <div class="hasil-tes-koneksi" id="hasil-tes-koneksi" hidden></div>
           </div>
         </details>
-    </div-->
+      </div>
     </section>
 
     <!-- ===== Halaman Curhat (Form Bertahap) ===== -->
@@ -165,7 +165,7 @@
             </div>
           </div>
 
-          <!-- Langkah 3: Kelas & Nama (kondisional) -->
+          <!-- Langkah 3: Kelas, Nama & No HP (kondisional) -->
           <div class="langkah" data-langkah="3">
             <h3 class="judul-langkah">Ceritakan identitasmu</h3>
             <div class="grup-input">
@@ -177,6 +177,11 @@
             <div class="grup-input">
               <label for="input-nama">Nama kamu <span class="wajib">*</span></label>
               <input type="text" id="input-nama" name="nama" maxlength="100" placeholder="Tulis namamu" autocomplete="off">
+            </div>
+            <div class="grup-input">
+              <label for="input-nohp">Nomor HP <span class="opsional">(opsional, untuk darurat)</span></label>
+              <input type="tel" id="input-nohp" name="nohp" maxlength="20" placeholder="08xxxxxxxxxx" autocomplete="off">
+              <small class="petunjuk-lampiran">Diisi jika kamu ingin bisa dihubungi langsung saat darurat. Guru BK hanya akan menghubungi nomor ini jika keselamatanmu terancam.</small>
             </div>
           </div>
 
