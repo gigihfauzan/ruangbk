@@ -828,6 +828,7 @@
     if (!data.anonim) {
       baris.push(['Kelas', data.kelas || '-']);
       baris.push(['Nama', data.nama || '-']);
+      if (data.noHP) baris.push(['No. HP', data.noHP]);
     }
     const kat = (dataPublik.kategori || []).find(function (k) { return k.ID === data.kategoriID; });
     baris.push(['Kategori', kat ? kat.Nama : data.kategoriID]);
@@ -873,6 +874,7 @@
       jenjang: jenjangRadio ? jenjangRadio.value : '',
       kelas: form.querySelector('#input-kelas').value,
       nama: form.querySelector('#input-nama').value.trim(),
+      noHP: form.querySelector('#input-nohp') ? form.querySelector('#input-nohp').value.trim() : '',
       kategoriID: kategoriRadio ? kategoriRadio.value : '',
       urgensi: urgensiRadio ? urgensiRadio.value : '',
       guruTujuanID: guruRadio ? guruRadio.value : 'Siapa saja',
@@ -908,6 +910,7 @@
         jenjang: data.jenjang,
         kelas: data.kelas,
         nama: data.nama,
+        noHP: data.noHP,
         kategoriID: data.kategoriID,
         urgensi: data.urgensi,
         guruTujuanID: data.guruTujuanID,
