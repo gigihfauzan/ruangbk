@@ -85,18 +85,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Kartu Tes Koneksi (untuk admin/pengelola saat diagnosa) -->
-      <div class="kontainer">
-        <details class="kartu-tes-koneksi">
-          <summary>&#128269; Tes Koneksi Server</summary>
-          <div class="isi-tes-koneksi">
-            <p>Pakai ini jika form curhat tidak berhasil terkirim atau data tidak tersimpan di Google Sheet.</p>
-            <button type="button" class="btn-sekunder" id="btn-tes-koneksi">Tes Sekarang</button>
-            <div class="hasil-tes-koneksi" id="hasil-tes-koneksi" hidden></div>
-          </div>
-        </details>
-      </div>
     </section>
 
     <!-- ===== Halaman Curhat (Form Bertahap) ===== -->
@@ -179,9 +167,9 @@
               <input type="text" id="input-nama" name="nama" maxlength="100" placeholder="Tulis namamu" autocomplete="off">
             </div>
             <div class="grup-input">
-              <label for="input-nohp">Nomor HP <span class="opsional">(opsional, untuk darurat)</span></label>
-              <input type="tel" id="input-nohp" name="nohp" maxlength="20" placeholder="08xxxxxxxxxx" autocomplete="off">
-              <small class="petunjuk-lampiran">Diisi jika kamu ingin bisa dihubungi langsung saat darurat. Guru BK hanya akan menghubungi nomor ini jika keselamatanmu terancam.</small>
+              <label for="input-nohp">Nomor HP <span class="wajib">*</span></label>
+              <input type="tel" id="input-nohp" name="nohp" maxlength="20" placeholder="08xxxxxxxxxx" autocomplete="off" required>
+              <small class="petunjuk-lampiran">Wajib diisi untuk kontak darurat. Guru BK hanya akan menghubungi nomor ini jika keselamatanmu terancam.</small>
             </div>
           </div>
 
