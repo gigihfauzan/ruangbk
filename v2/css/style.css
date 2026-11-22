@@ -2466,3 +2466,27 @@ body {
   font-size: 14px;
   color: var(--teks-lembut);
 }
+
+/* ===== Tombol Hapus Gambar ===== */
+
+.btn-hapus-gambar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--bahaya-tepi);
+  border-radius: 6px;
+  background-color: var(--bahaya-ringan);
+  color: var(--bahaya);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 32px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-hapus-gambar:hover {
+  background-color: var(--bahaya);
+  color: #fff;
+}
