@@ -443,14 +443,22 @@
       const kunci = el.dataset.pengaturan;
       if (p[kunci] !== undefined) el.value = p[kunci];
     });
-    // Pratinjau logo & banner
+    // Pratinjau logo & banner + tombol hapus
+    const btnHapusLogo = document.getElementById('btn-hapus-logo');
     if (p.logo) {
       const img = document.getElementById('pratinjau-logo');
       img.src = p.logo; img.hidden = false;
+      if (btnHapusLogo) btnHapusLogo.hidden = false;
+    } else {
+      if (btnHapusLogo) btnHapusLogo.hidden = true;
     }
+    const btnHapusBanner = document.getElementById('btn-hapus-banner');
     if (p.banner) {
       const img = document.getElementById('pratinjau-banner');
       img.src = p.banner; img.hidden = false;
+      if (btnHapusBanner) btnHapusBanner.hidden = false;
+    } else {
+      if (btnHapusBanner) btnHapusBanner.hidden = true;
     }
     // Tema aktif
     document.querySelectorAll('.kartu-tema').forEach(function (b) {
@@ -499,19 +507,27 @@
     tampilkanMemuat(false);
   }
 
-  function simpanIdentitas() {
+  // Daftar field per bagian (hanya field ini yang dikirim saat simpan bagian tsb)
+  const FIELD_IDENTITAS = ['namaSekolah', 'namaSingkat', 'alamat', 'kontakSekolah', 'kepalaSekolah', 'penandaTangan', 'jabatanPenandaTangan', 'logo'];
+  const FIELD_PERIODE = ['tahunAjaranAktif', 'semesterAktif', 'jamLayanan', 'temaWarna', 'teksSambutan', 'banner'];
+  const FIELD_PRIVASI = ['kebijakanPrivasi', 'kontakDarurat'];
+
+  function kumpulField(daftarKunci) {
     const p = {};
-    document.querySelectorAll('[data-pengaturan]').forEach(function (el) {
-      p[el.dataset.pengaturan] = el.value;
+    daftarKunci.forEach(function (kunci) {
+      const el = document.querySelector('[data-pengaturan="' + kunci + '"]');
+      if (el) p[kunci] = el.value;
     });
+    return p;
+  }
+
+  function simpanIdentitas() {
+    const p = kumpulField(FIELD_IDENTITAS);
     simpanBagianPengaturan('identitas', { pengaturan: p });
   }
 
   function simpanPeriode() {
-    const p = {};
-    document.querySelectorAll('[data-pengaturan]').forEach(function (el) {
-      p[el.dataset.pengaturan] = el.value;
-    });
+    const p = kumpulField(FIELD_PERIODE);
     // Tambah temaWarna dari kartu yang aktif
     const temaAktif = document.querySelector('.kartu-tema.aktif');
     if (temaAktif) p.temaWarna = temaAktif.dataset.tema;
@@ -519,14 +535,7 @@
   }
 
   function simpanPrivasi() {
-    const p = {
-      kebijakanPrivasi: val('set-kebijakan'),
-      kontakDarurat: val('set-darurat')
-    };
-    // Gabung dengan pengaturan lain yang sudah ada agar tidak hilang
-    document.querySelectorAll('[data-pengaturan]').forEach(function (el) {
-      if (!p[el.dataset.pengaturan]) p[el.dataset.pengaturan] = el.value;
-    });
+    const p = kumpulField(FIELD_PRIVASI);
     simpanBagianPengaturan('privasi', { pengaturan: p });
   }
 
@@ -591,6 +600,7 @@
           '<label for="' + fotoInputId + '" class="zona-upload zona-upload-padat"><span aria-hidden="true">&#128247;</span> Pilih Foto</label>' +
           '<input type="file" id="' + fotoInputId + '" class="ed-guru-foto" accept="image/*" hidden>' +
           '<input type="hidden" class="ed-guru-foto-data" value="' + escapeAttr(g.Foto || '') + '">' +
+          (g.Foto ? '<button type="button" class="btn-hapus-gambar btn-hapus-foto-guru">&#128465; Hapus Foto</button>' : '') +
           '<small class="catatan-gambar">Maks 200x200 piksel.</small>' +
         '</div>' +
       '</div>' +
@@ -610,6 +620,17 @@
     inputFoto.addEventListener('change', function () {
       prosesFotoGuru(inputFoto.files[0], el);
     });
+    // Event hapus foto guru
+    const btnHapusFoto = el.querySelector('.btn-hapus-foto-guru');
+    if (btnHapusFoto) {
+      btnHapusFoto.addEventListener('click', function () {
+        el.querySelector('.ed-guru-foto-data').value = '';
+        const img = el.querySelector('.pratinjau-gambar-kecil');
+        if (img) img.remove();
+        btnHapusFoto.remove();
+        tampilkanToast('Foto dihapus. Klik Simpan Daftar Guru untuk menyimpan.', 'peringatan');
+      });
+    }
     return el;
   }
 
@@ -626,6 +647,22 @@
       }
       img.src = dataUri;
       img.hidden = false;
+      // Tampilkan tombol hapus foto jika belum ada
+      if (!elKartu.querySelector('.btn-hapus-foto-guru')) {
+        const zona = elKartu.querySelector('.zona-upload-mini');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-hapus-gambar btn-hapus-foto-guru';
+        btn.innerHTML = '&#128465; Hapus Foto';
+        btn.addEventListener('click', function () {
+          elKartu.querySelector('.ed-guru-foto-data').value = '';
+          const imgEl = elKartu.querySelector('.pratinjau-gambar-kecil');
+          if (imgEl) imgEl.remove();
+          btn.remove();
+          tampilkanToast('Foto dihapus. Klik Simpan Daftar Guru.', 'peringatan');
+        });
+        zona.appendChild(btn);
+      }
     } catch (e) {
       tampilkanToast(String(e.message || e), 'error');
     }
@@ -921,11 +958,21 @@
       img.src = dataUri; img.hidden = false;
       const hidden = document.getElementById('hidden-logo');
       if (hidden) hidden.value = dataUri;
+      // Tampilkan tombol hapus
+      document.getElementById('btn-hapus-logo').hidden = false;
       tampilkanToast('Logo siap. Klik Simpan untuk menyimpan.', 'sukses');
     } catch (e) {
       tampilkanToast(String(e.message || e), 'error');
     }
     tampilkanMemuat(false);
+  }
+
+  function hapusLogo() {
+    document.getElementById('hidden-logo').value = '';
+    const img = document.getElementById('pratinjau-logo');
+    img.src = ''; img.hidden = true;
+    document.getElementById('btn-hapus-logo').hidden = true;
+    tampilkanToast('Logo dihapus. Klik Simpan Identitas untuk menyimpan.', 'peringatan');
   }
 
   async function prosesBanner(file) {
@@ -937,11 +984,21 @@
       img.src = dataUri; img.hidden = false;
       const hidden = document.getElementById('hidden-banner');
       if (hidden) hidden.value = dataUri;
+      // Tampilkan tombol hapus
+      document.getElementById('btn-hapus-banner').hidden = false;
       tampilkanToast('Banner siap. Klik Simpan untuk menyimpan.', 'sukses');
     } catch (e) {
       tampilkanToast(String(e.message || e), 'error');
     }
     tampilkanMemuat(false);
+  }
+
+  function hapusBanner() {
+    document.getElementById('hidden-banner').value = '';
+    const img = document.getElementById('pratinjau-banner');
+    img.src = ''; img.hidden = true;
+    document.getElementById('btn-hapus-banner').hidden = true;
+    tampilkanToast('Banner dihapus. Klik Simpan Periode & Tampilan untuk menyimpan.', 'peringatan');
   }
 
   // ===== PDF Dialog =====
@@ -1190,6 +1247,10 @@
     document.getElementById('input-banner-admin').addEventListener('change', function () {
       prosesBanner(this.files[0]); this.value = '';
     });
+
+    // Hapus gambar
+    document.getElementById('btn-hapus-logo').addEventListener('click', hapusLogo);
+    document.getElementById('btn-hapus-banner').addEventListener('click', hapusBanner);
 
     // Dasbor aksi
     document.getElementById('btn-rekap-pdf').addEventListener('click', bukaDialogPDFRekap);
