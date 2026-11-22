@@ -169,6 +169,7 @@
       ['Jenjang', 'Kelas ' + String(k.Jenjang || '-')],
       ['Nama', namaTampil],
       ['Kelas', kelasTampil],
+      ['No. HP', anonim ? '-' : (sertakanIdentitas ? (k.NoHP || '-') : '[Disembunyikan]')],
       ['Kategori', kategoriNama || k.KategoriID || '-'],
       ['Urgensi', (k.Urgensi || '-').charAt(0).toUpperCase() + (k.Urgensi || '').slice(1)],
       ['Guru Tujuan', k.GuruTujuanID === 'Siapa saja' || !k.GuruTujuanID ? 'Siapa Saja' : k.GuruTujuanID],
