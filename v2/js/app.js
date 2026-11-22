@@ -400,12 +400,6 @@
       }
     });
 
-    // Tombol Tes Koneksi
-    const btnTes = document.getElementById('btn-tes-koneksi');
-    if (btnTes) {
-      btnTes.addEventListener('click', tesKoneksiServer);
-    }
-
     // Keluar Cepat
     document.getElementById('btn-keluar-cepat').addEventListener('click', function () {
       window.location.href = URL_KELUAR;
@@ -592,8 +586,10 @@
         if (modeAnonim === false) {
           const kelas = document.getElementById('input-kelas').value;
           const nama = document.getElementById('input-nama').value.trim();
+          const noHPVal = document.getElementById('input-nohp').value.trim();
           if (!kelas) return 'Pilih kelasmu.';
           if (!nama) return 'Tulis namamu.';
+          if (!noHPVal) return 'Tulis nomor HP-mu untuk kontak darurat.';
         }
         return null;
       case 4:
