@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Panel admin Layanan BK SMP">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin BK SMP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-tema="teal" class="badan-admin">
+
+  <!-- ===== Layar Login ===== -->
+  <section id="layar-login" class="layar-login">
+    <div class="kartu-login">
+      <div class="logo-login" aria-hidden="true">&#128274;</div>
+      <h1>Login Admin BK</h1>
+      <p class="sub-login">Masukkan kata sandi untuk mengelola kiriman siswa.</p>
+      <form id="form-login" autocomplete="off">
+        <div class="grup-input">
+          <label for="input-kata-sandi">Kata Sandi</label>
+          <input type="password" id="input-kata-sandi" placeholder="Kata sandi admin" required>
+        </div>
+        <button type="submit" class="btn-primer btn-lebar" id="btn-login">Masuk</button>
+      </form>
+      <div class="info-login" id="info-login" hidden></div>
+      <a href="index.html" class="taut-kembali">&larr; Kembali ke halaman siswa</a>
+    </div>
+  </section>
+
+  <!-- ===== Aplikasi Admin ===== -->
+  <div id="app-admin" class="app-admin" hidden>
+
+    <!-- Header Admin -->
+    <header class="header-admin" role="banner">
+      <div class="header-admin-dalam">
+        <div class="identitas-admin">
+          <img id="admin-logo" class="logo-admin" alt="" hidden>
+          <div>
+            <strong id="admin-nama-sekolah">Admin BK</strong>
+            <small id="admin-periode"></small>
+          </div>
+        </div>
+        <nav class="nav-admin" aria-label="Navigasi admin">
+          <button class="taut-admin aktif" data-view="dasbor" type="button">Dasbor</button>
+          <button class="taut-admin" data-view="kotak-masuk" type="button">Kotak Masuk</button>
+          <button class="taut-admin" data-view="pengaturan" type="button">Pengaturan</button>
+        </nav>
+        <div class="aksi-header-admin">
+          <a href="index.html" target="_blank" class="btn-sekunder btn-kecil" rel="noopener">Lihat Web Siswa</a>
+          <button class="btn-sekunder btn-kecil" id="btn-logout" type="button">Keluar</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Konten Admin -->
+    <main class="main-admin" role="main">
+
+      <!-- ===== View: Dasbor ===== -->
+      <section id="view-dasbor" class="view-admin aktif" aria-label="Dasbor">
+        <div class="kontainer-admin">
+          <h2 class="judul-view">Dasbor</h2>
+          <p class="sub-view" id="dasbor-periode-info"></p>
+          <div class="grid-kartu-stat" id="grid-kartu-stat">
+            <div class="kartu-stat" data-stat="baru">
+              <span class="ikon-stat" aria-hidden="true">&#128231;</span>
+              <span class="angka-stat" id="stat-baru">-</span>
+              <span class="label-stat">Kiriman Baru</span>
+            </div>
+            <div class="kartu-stat" data-stat="belumDibalas">
+              <span class="ikon-stat" aria-hidden="true">&#9993;&#65039;</span>
+              <span class="angka-stat" id="stat-belum">-</span>
+              <span class="label-stat">Belum Dibalas</span>
+            </div>
+            <div class="kartu-stat kartu-urgensi" data-stat="urgensiTinggi">
+              <span class="ikon-stat" aria-hidden="true">&#9888;&#65039;</span>
+              <span class="angka-stat" id="stat-urgensi">-</span>
+              <span class="label-stat">Urgensi Tinggi</span>
+            </div>
+            <div class="kartu-stat kartu-eskalasi" data-stat="perluEskalasi">
+              <span class="ikon-stat" aria-hidden="true">&#128680;</span>
+              <span class="angka-stat" id="stat-eskalasi">-</span>
+              <span class="label-stat">Perlu Eskalasi (TPPK)</span>
+            </div>
+            <div class="kartu-stat kartu-total" data-stat="total">
+              <span class="ikon-stat" aria-hidden="true">&#128202;</span>
+              <span class="angka-stat" id="stat-total">-</span>
+              <span class="label-stat">Total Periode Aktif</span>
+            </div>
+          </div>
+
+          <div class="aksi-dasbor">
+            <button class="btn-primer" data-view-tujuan="kotak-masuk" type="button">Buka Kotak Masuk</button>
+            <button class="btn-sekunder" id="btn-rekap-pdf" type="button">Buat Laporan Rekap PDF</button>
+            <button class="btn-sekunder" id="btn-cadangan" type="button">Unduh Cadangan Excel</button>
+            <button class="btn-sekunder btn-kecil" id="btn-trigger-backup" type="button">Aktifkan Cadangan Otomatis</button>
+          </div>
+
+          <!-- Peringatan Follow-up -->
+          <div class="peringatan-followup" id="peringatan-followup" hidden>
+            <div class="isi-peringatan-followup">
+              <span class="ikon-peringatan-followup" aria-hidden="true">&#128276;</span>
+              <div>
+                <strong id="judul-peringatan-followup">Ada kiriman yang perlu follow-up</strong>
+                <p id="teks-peringatan-followup" class="sub-peringatan-followup"></p>
+              </div>
+            </div>
+            <button class="btn-primer btn-kecil" id="btn-lihat-followup" type="button" data-view-tujuan="kotak-masuk">Lihat yang perlu follow-up</button>
+          </div>
+
+          <!-- Kartu klik: Perlu Follow-up -->
+          <div class="grid-kartu-stat grid-kartu-stat-tambahan">
+            <div class="kartu-stat kartu-followup" data-stat="perluFollowup" id="kartu-followup" role="button" tabindex="0" data-view-tujuan="kotak-masuk">
+              <span class="ikon-stat" aria-hidden="true">&#128203;</span>
+              <span class="angka-stat" id="stat-followup">-</span>
+              <span class="label-stat">Perlu Follow-up</span>
+              <small class="petunjuk-kartu-followup">Klik untuk buka kotak masuk</small>
+            </div>
+          </div>
+
+          <!-- Section Statistik -->
+          <div class="panel-statistik" id="panel-statistik">
+            <h3 class="judul-panel-statistik">Statistik Kiriman</h3>
+            <p class="sub-panel-statistik" id="sub-statistik">Memuat statistik...</p>
+            <div class="grid-chart">
+              <div class="kartu-chart">
+                <h4 class="judul-chart">Per Kategori</h4>
+                <div class="wadah-canvas">
+                  <canvas id="chart-kategori" aria-label="Grafik doughnut kiriman per kategori" role="img"></canvas>
+                </div>
+              </div>
+              <div class="kartu-chart">
+                <h4 class="judul-chart">Per Status</h4>
+                <div class="wadah-canvas">
+                  <canvas id="chart-status" aria-label="Grafik batang kiriman per status" role="img"></canvas>
+                </div>
+              </div>
+              <div class="kartu-chart kartu-chart-lebar">
+                <h4 class="judul-chart">Tren 6 Bulan Terakhir</h4>
+                <div class="wadah-canvas">
+                  <canvas id="chart-bulanan" aria-label="Grafik garis kiriman 6 bulan terakhir" role="img"></canvas>
+                </div>
+              </div>
+              <div class="kartu-chart">
+                <h4 class="judul-chart">Per Jenjang</h4>
+                <div class="wadah-canvas">
+                  <canvas id="chart-jenjang" aria-label="Grafik batang kiriman per jenjang" role="img"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== View: Kotak Masuk ===== -->
+      <section id="view-kotak-masuk" class="view-admin" aria-label="Kotak Masuk">
+        <div class="kontainer-admin">
+          <h2 class="judul-view">Kotak Masuk</h2>
+
+          <!-- Filter -->
+          <div class="panel-filter">
+            <div class="baris-filter">
+              <div class="grup-filter">
+                <label for="filter-cari">Cari</label>
+                <input type="search" id="filter-cari" placeholder="ID, nama, atau isi pesan">
+              </div>
+              <div class="grup-filter">
+                <label for="filter-jenjang">Jenjang</label>
+                <select id="filter-jenjang">
+                  <option value="">Semua</option>
+                  <option value="7">Kelas 7</option>
+                  <option value="8">Kelas 8</option>
+                  <option value="9">Kelas 9</option>
+                </select>
+              </div>
+              <div class="grup-filter">
+                <label for="filter-status">Status</label>
+                <select id="filter-status">
+                  <option value="">Semua</option>
+                  <option value="Baru">Baru</option>
+                  <option value="Dibaca">Dibaca</option>
+                  <option value="Ditangani">Ditangani</option>
+                  <option value="Selesai">Selesai</option>
+                  <option value="Dirujuk">Dirujuk</option>
+                </select>
+              </div>
+              <div class="grup-filter">
+                <label for="filter-urgensi">Urgensi</label>
+                <select id="filter-urgensi">
+                  <option value="">Semua</option>
+                  <option value="tinggi">Tinggi</option>
+                  <option value="sedang">Sedang</option>
+                  <option value="rendah">Rendah</option>
+                </select>
+              </div>
+            </div>
+            <div class="baris-filter">
+              <div class="grup-filter">
+                <label for="filter-kategori">Kategori</label>
+                <select id="filter-kategori"><option value="">Semua</option></select>
+              </div>
+              <div class="grup-filter">
+                <label for="filter-guru">Guru Tujuan</label>
+                <select id="filter-guru"><option value="">Semua</option></select>
+              </div>
+              <div class="grup-filter">
+                <label for="filter-ta">Tahun Ajaran</label>
+                <select id="filter-ta"><option value="">Semua</option></select>
+              </div>
+              <div class="grup-filter">
+                <label for="filter-semester">Semester</label>
+                <select id="filter-semester">
+                  <option value="">Semua</option>
+                  <option value="Ganjil">Ganjil</option>
+                  <option value="Genap">Genap</option>
+                </select>
+              </div>
+            </div>
+            <div class="baris-filter baris-filter-aksi">
+              <label class="cek-eskalasi">
+                <input type="checkbox" id="filter-eskalasi"> Hanya eskalasi TPPK
+              </label>
+              <button class="btn-sekunder btn-kecil" id="btn-reset-filter" type="button">Reset Filter</button>
+              <button class="btn-primer btn-kecil" id="btn-terap-filter" type="button">Terapkan</button>
+            </div>
+          </div>
+
+          <!-- Tabel Kiriman -->
+          <div class="panel-tabel">
+            <div class="header-tabel">
+              <span id="info-jumlah-kiriman">0 kiriman</span>
+            </div>
+            <div class="tabel-kiriman" id="tabel-kiriman" aria-live="polite">
+              <p class="keadaan-kosong">Memuat kiriman...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== View: Detail Kiriman ===== -->
+      <section id="view-detail" class="view-admin" aria-label="Detail Kiriman">
+        <div class="kontainer-admin">
+          <button class="btn-teks" id="btn-kembali-inbox" type="button">&larr; Kembali ke Kotak Masuk</button>
+          <div id="konten-detail" aria-live="polite">
+            <p class="keadaan-kosong">Pilih kiriman dari kotak masuk.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== View: Pengaturan ===== -->
+      <section id="view-pengaturan" class="view-admin" aria-label="Pengaturan">
+        <div class="kontainer-admin">
+          <h2 class="judul-view">Pengaturan</h2>
+          <p class="sub-view">Ubah identitas sekolah, daftar guru, kategori, dan lainnya. Tersimpan otomatis saat tombol Simpan ditekan.</p>
+
+          <!-- Tab Pengaturan -->
+          <div class="nav-tab" role="tablist">
+            <button class="tab-aktif" role="tab" data-tab="identitas" type="button">Identitas Sekolah</button>
+            <button role="tab" data-tab="periode" type="button">Periode &amp; Tampilan</button>
+            <button role="tab" data-tab="guru" type="button">Guru BK</button>
+            <button role="tab" data-tab="kelas" type="button">Kelas</button>
+            <button role="tab" data-tab="kategori" type="button">Kategori</button>
+            <button role="tab" data-tab="layanan" type="button">Layanan</button>
+            <button role="tab" data-tab="faq" type="button">FAQ</button>
+            <button role="tab" data-tab="jadwal" type="button">Jadwal</button>
+            <button role="tab" data-tab="materi" type="button">Materi</button>
+            <button role="tab" data-tab="privasi" type="button">Privasi &amp; Darurat</button>
+          </div>
+
+          <!-- Tab: Identitas Sekolah -->
+          <div class="panel-tab aktif" data-panel="identitas" role="tabpanel">
+            <h3 class="judul-panel">Identitas Sekolah</h3>
+            <div class="grid-form-2kol">
+              <div class="grup-input">
+                <label for="set-nama-sekolah">Nama Sekolah</label>
+                <input type="text" id="set-nama-sekolah" data-pengaturan="namaSekolah" maxlength="100">
+              </div>
+              <div class="grup-input">
+                <label for="set-nama-singkat">Nama Singkat</label>
+                <input type="text" id="set-nama-singkat" data-pengaturan="namaSingkat" maxlength="50">
+              </div>
+              <div class="grup-input">
+                <label for="set-alamat">Alamat</label>
+                <input type="text" id="set-alamat" data-pengaturan="alamat" maxlength="200">
+              </div>
+              <div class="grup-input">
+                <label for="set-kontak">Kontak Sekolah</label>
+                <input type="text" id="set-kontak" data-pengaturan="kontakSekolah" maxlength="100">
+              </div>
+              <div class="grup-input">
+                <label for="set-kepala">Kepala Sekolah</label>
+                <input type="text" id="set-kepala" data-pengaturan="kepalaSekolah" maxlength="100">
+              </div>
+              <div class="grup-input">
+                <label for="set-penanda">Penanda Tangan Laporan</label>
+                <input type="text" id="set-penanda" data-pengaturan="penandaTangan" maxlength="100" placeholder="Nama guru BK untuk tanda tangan laporan">
+              </div>
+              <div class="grup-input">
+                <label for="set-jabatan">Jabatan Penanda Tangan</label>
+                <input type="text" id="set-jabatan" data-pengaturan="jabatanPenandaTangan" maxlength="100">
+              </div>
+            </div>
+            <div class="grup-input">
+              <label>Logo Sekolah</label>
+              <div class="zona-upload-mini" id="zona-logo-admin">
+                <img id="pratinjau-logo" class="pratinjau-gambar-kecil" alt="" hidden>
+                <label for="input-logo-admin" class="zona-upload zona-upload-padat">
+                  <span aria-hidden="true">&#128247;</span> Pilih Logo
+                </label>
+                <input type="file" id="input-logo-admin" accept="image/*" hidden>
+                <input type="hidden" data-pengaturan="logo" id="hidden-logo">
+                <button type="button" class="btn-hapus-gambar" id="btn-hapus-logo" hidden>&#128465; Hapus Logo</button>
+                <small class="catatan-gambar">Ukuran otomatis diubah ke maks 250x250 piksel. Klik Simpan setelah memilih logo.</small>
+              </div>
+            </div>
+            <button class="btn-primer" id="btn-simpan-identitas" type="button">Simpan Identitas</button>
+          </div>
+
+          <!-- Tab: Periode & Tampilan -->
+          <div class="panel-tab" data-panel="periode" role="tabpanel">
+            <h3 class="judul-panel">Periode &amp; Tampilan</h3>
+            <div class="grid-form-2kol">
+              <div class="grup-input">
+                <label for="set-ta">Tahun Ajaran Aktif <span class="wajib">*</span></label>
+                <input type="text" id="set-ta" data-pengaturan="tahunAjaranAktif" maxlength="20" placeholder="2025/2026">
+                <small>Setiap kiriman baru otomatis dicap periode ini.</small>
+              </div>
+              <div class="grup-input">
+                <label for="set-semester">Semester Aktif <span class="wajib">*</span></label>
+                <select id="set-semester" data-pengaturan="semesterAktif">
+                  <option value="Ganjil">Ganjil</option>
+                  <option value="Genap">Genap</option>
+                </select>
+              </div>
+              <div class="grup-input">
+                <label for="set-jam">Jam Layanan</label>
+                <input type="text" id="set-jam" data-pengaturan="jamLayanan" maxlength="100">
+              </div>
+            </div>
+            <div class="grup-input">
+              <label>Tema Warna</label>
+              <div class="pilihan-tema" id="pilihan-tema">
+                <button type="button" class="kartu-tema" data-tema="teal" style="--swatch:#0d9488">Teal</button>
+                <button type="button" class="kartu-tema" data-tema="hijau" style="--swatch:#16a34a">Hijau</button>
+                <button type="button" class="kartu-tema" data-tema="mawar" style="--swatch:#e11d48">Mawar</button>
+                <button type="button" class="kartu-tema" data-tema="ungu" style="--swatch:#7c3aed">Ungu</button>
+                <button type="button" class="kartu-tema" data-tema="langit" style="--swatch:#0284c7">Langit</button>
+              </div>
+            </div>
+            <div class="grup-input">
+              <label for="set-sambutan">Teks Sambutan</label>
+              <textarea id="set-sambutan" data-pengaturan="teksSambutan" maxlength="500" rows="4"></textarea>
+            </div>
+            <div class="grup-input">
+              <label>Banner</label>
+              <div id="zona-banner-admin">
+                <img id="pratinjau-banner" class="pratinjau-gambar-lebar" alt="" hidden>
+                <label for="input-banner-admin" class="zona-upload zona-upload-padat">
+                  <span aria-hidden="true">&#128444;&#65039;</span> Pilih Banner
+                </label>
+                <input type="file" id="input-banner-admin" accept="image/*" hidden>
+                <input type="hidden" data-pengaturan="banner" id="hidden-banner">
+                <button type="button" class="btn-hapus-gambar" id="btn-hapus-banner" hidden>&#128465; Hapus Banner</button>
+                <small class="catatan-gambar">Ukuran otomatis diubah ke maks 800x200 piksel. Klik Simpan setelah memilih banner.</small>
+              </div>
+            </div>
+            <button class="btn-primer" id="btn-simpan-periode" type="button">Simpan Periode &amp; Tampilan</button>
+          </div>
+
+          <!-- Tab: Guru BK -->
+          <div class="panel-tab" data-panel="guru" role="tabpanel">
+            <h3 class="judul-panel">Daftar Guru BK</h3>
+            <p class="sub-panel">Atur daftar guru BK yang muncul di halaman siswa. Set "Aktif" untuk menampilkan.</p>
+            <div id="daftar-editor-guru" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-guru" type="button">+ Tambah Guru</button>
+            <button class="btn-primer" id="btn-simpan-guru" type="button">Simpan Daftar Guru</button>
+          </div>
+
+          <!-- Tab: Kelas -->
+          <div class="panel-tab" data-panel="kelas" role="tabpanel">
+            <h3 class="judul-panel">Daftar Kelas</h3>
+            <div id="daftar-editor-kelas" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-kelas" type="button">+ Tambah Kelas</button>
+            <button class="btn-primer" id="btn-simpan-kelas" type="button">Simpan Daftar Kelas</button>
+          </div>
+
+          <!-- Tab: Kategori -->
+          <div class="panel-tab" data-panel="kategori" role="tabpanel">
+            <h3 class="judul-panel">Kategori Curhat</h3>
+            <p class="sub-panel">Kategori dengan eskalasi aktif (TPPK) ditandai merah di kotak masuk.</p>
+            <div id="daftar-editor-kategori" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-kategori" type="button">+ Tambah Kategori</button>
+            <button class="btn-primer" id="btn-simpan-kategori" type="button">Simpan Kategori</button>
+          </div>
+
+          <!-- Tab: Layanan -->
+          <div class="panel-tab" data-panel="layanan" role="tabpanel">
+            <h3 class="judul-panel">Layanan BK</h3>
+            <div id="daftar-editor-layanan" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-layanan" type="button">+ Tambah Layanan</button>
+            <button class="btn-primer" id="btn-simpan-layanan" type="button">Simpan Layanan</button>
+          </div>
+
+          <!-- Tab: FAQ -->
+          <div class="panel-tab" data-panel="faq" role="tabpanel">
+            <h3 class="judul-panel">FAQ</h3>
+            <div id="daftar-editor-faq" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-faq" type="button">+ Tambah FAQ</button>
+            <button class="btn-primer" id="btn-simpan-faq" type="button">Simpan FAQ</button>
+          </div>
+
+          <!-- Tab: Jadwal Konseling -->
+          <div class="panel-tab" data-panel="jadwal" role="tabpanel">
+            <h3 class="judul-panel">Jadwal Konseling</h3>
+            <p class="sub-panel">Atur slot jadwal konseling yang tersedia untuk dipesan siswa. Slot yang berstatus "Terpesan" tidak bisa dipesan ulang.</p>
+            <div id="daftar-editor-jadwal" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-jadwal" type="button">+ Tambah Slot</button>
+            <button class="btn-primer" id="btn-simpan-jadwal" type="button">Simpan Jadwal</button>
+          </div>
+
+          <!-- Tab: Bank Materi -->
+          <div class="panel-tab" data-panel="materi" role="tabpanel">
+            <h3 class="judul-panel">Bank Materi</h3>
+            <p class="sub-panel">Kelola materi BK yang tampil di halaman siswa (tab "Materi"). Materi nonaktif tidak ditampilkan.</p>
+            <div id="daftar-editor-materi" class="daftar-editor"></div>
+            <button class="btn-sekunder btn-kecil" id="btn-tambah-materi" type="button">+ Tambah Materi</button>
+            <button class="btn-primer" id="btn-simpan-materi" type="button">Simpan Materi</button>
+          </div>
+
+          <!-- Tab: Privasi & Darurat -->
+          <div class="panel-tab" data-panel="privasi" role="tabpanel">
+            <h3 class="judul-panel">Privasi &amp; Kontak Darurat</h3>
+
+            <!-- Notifikasi Email -->
+            <div class="grup-notifikasi-email">
+              <label class="cek-box">
+                <input type="checkbox" id="set-email-aktif" data-pengaturan="emailNotifikasi">
+                Aktifkan notifikasi email saat ada kiriman baru
+              </label>
+              <div class="grup-input grup-input-email-admin">
+                <label for="set-email-admin">Email Admin Penerima Notifikasi</label>
+                <input type="email" id="set-email-admin" data-pengaturan="emailAdmin" maxlength="100" placeholder="admin@sekolah.sch.id">
+                <small>Email ini akan menerima notifikasi setiap ada kiriman baru. Untuk kiriman urgensi tinggi, subjek email akan bertanda URGENT.</small>
+              </div>
+            </div>
+
+            <div class="grup-input">
+              <label for="set-kebijakan">Kebijakan Privasi</label>
+              <textarea id="set-kebijakan" data-pengaturan="kebijakanPrivasi" rows="10" placeholder="Tulis kebijakan privasi..."></textarea>
+              <small>Mohon ditinjau pihak sekolah. Draf awal sudah disediakan, silakan sesuaikan.</small>
+            </div>
+            <div class="grup-input">
+              <label for="set-darurat">Kontak Darurat</label>
+              <textarea id="set-darurat" data-pengaturan="kontakDarurat" rows="6" placeholder="Daftar kontak darurat..."></textarea>
+              <small>Mohon verifikasi nomor sebelum dipakai.</small>
+            </div>
+            <button class="btn-primer" id="btn-simpan-privasi" type="button">Simpan Privasi &amp; Darurat</button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Overlay Memuat -->
+  <div id="overlay-memuat" class="overlay-memuat" hidden>
+    <div class="kotak-memuat">
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="teks-memuat">Memuat...</p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Dialog Opsi PDF -->
+  <div id="dialog-pdf" class="dialog-modal" hidden>
+    <div class="kotak-dialog">
+      <h3 id="judul-dialog-pdf">Opsi Laporan PDF</h3>
+      <div class="isi-dialog" id="isi-dialog-pdf"></div>
+      <div class="aksi-dialog">
+        <button class="btn-sekunder btn-kecil" id="btn-batal-pdf" type="button">Batal</button>
+        <button class="btn-primer btn-kecil" id="btn-buat-pdf" type="button">Buat PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pustaka CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
