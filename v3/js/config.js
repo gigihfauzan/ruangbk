@@ -3,5 +3,5 @@
 // Ganti nilai di bawah dengan URL Web App Anda dari Apps Script
 // (Deploy > Manage deployments > salin URL).
 const CONFIG = {
-  WEB_APP_URL: 'MASUKKAN_URL_WEB_APP_DI_SINI'
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzSdu2CHJ-KZHWSbXpxplV3epUPVSVkPJ2bKfGWzhnVAsWwLqelSpXl3ItGTTd4b0Ec/exec'
 };
