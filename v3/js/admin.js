@@ -1308,6 +1308,7 @@
     const el = document.createElement('div');
     el.className = 'kartu-editor kartu-editor-materi';
     const opsiKategori = ['pribadi', 'belajar', 'sosial', 'karier'];
+    const editorId = 'editor-materi-' + idx + '-' + Date.now();
     el.innerHTML =
       '<span class="ed-materi-id" hidden>' + escapeHtml(m.ID || '') + '</span>' +
       '<div class="grid-form-materi">' +
@@ -1334,12 +1335,63 @@
           '<label class="cek-box"><input type="checkbox" class="ed-materi-aktif"' + (isAktif(m.Aktif) ? ' checked' : '') + '> Tampilkan di halaman siswa</label>' +
         '</div>' +
       '</div>' +
-      '<div class="grup-input"><label>Konten</label>' +
-        '<textarea class="ed-materi-konten" rows="4" maxlength="2000" placeholder="Tulis isi materi...">' + escapeHtml(m.Konten || '') + '</textarea>' +
+      '<div class="grup-input">' +
+        '<label>Konten Materi</label>' +
+        '<div class="editor-materi">' +
+          '<div class="toolbar-editor" role="toolbar" aria-label="Format konten">' +
+            '<button type="button" data-cmd="bold" title="Tebal (Ctrl+B)" aria-label="Tebal"><b>B</b></button>' +
+            '<button type="button" data-cmd="italic" title="Miring (Ctrl+I)" aria-label="Miring"><i>I</i></button>' +
+            '<span class="pemisah-toolbar"></span>' +
+            '<button type="button" data-cmd="formatBlock" data-val="h2" title="Judul Besar" aria-label="Judul Besar">H2</button>' +
+            '<button type="button" data-cmd="formatBlock" data-val="h3" title="Judul Sedang" aria-label="Judul Sedang">H3</button>' +
+            '<button type="button" data-cmd="formatBlock" data-val="p" title="Paragraf normal" aria-label="Paragraf">P</button>' +
+            '<span class="pemisah-toolbar"></span>' +
+            '<button type="button" data-cmd="insertUnorderedList" title="Daftar Bullet" aria-label="Daftar Bullet">&#8226; List</button>' +
+            '<button type="button" data-cmd="insertOrderedList" title="Daftar Bernomor" aria-label="Daftar Bernomor">1. List</button>' +
+            '<span class="pemisah-toolbar"></span>' +
+            '<button type="button" data-cmd="formatBlock" data-val="blockquote" title="Kutipan" aria-label="Kutipan">&#8220; Quote</button>' +
+            '<button type="button" data-cmd="createLink" title="Sisipkan Tautan" aria-label="Tautan">&#128279; Link</button>' +
+            '<button type="button" data-cmd="removeFormat" title="Hapus Format" aria-label="Hapus Format">&#10005;</button>' +
+          '</div>' +
+          '<div class="area-editor" id="' + editorId + '" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Tulis isi materi di sini... Gunakan toolbar di atas untuk memformat teks (tebal, miring, judul, daftar, kutipan, tautan)."></div>' +
+          '<input type="hidden" class="ed-materi-konten">' +
+        '</div>' +
       '</div>' +
       '<div class="aksi-kartu-editor">' +
         '<button type="button" class="btn-hapus-editor">&times; Hapus</button>' +
       '</div>';
+
+    // Set konten editor dari data yang ada
+    const areaEditor = el.querySelector('.area-editor');
+    const hiddenKonten = el.querySelector('.ed-materi-konten');
+    areaEditor.innerHTML = m.Konten || '';
+    hiddenKonten.value = m.Konten || '';
+
+    // Sinkronkan editor ke hidden input saat mengetik
+    areaEditor.addEventListener('input', function () {
+      hiddenKonten.value = areaEditor.innerHTML;
+    });
+
+    // Handler tombol toolbar
+    el.querySelectorAll('.toolbar-editor button').forEach(function (btn) {
+      btn.addEventListener('mousedown', function (e) {
+        e.preventDefault(); // cegah editor kehilangan fokus
+        const cmd = btn.dataset.cmd;
+        const val = btn.dataset.val;
+        if (cmd === 'createLink') {
+          const url = prompt('Masukkan URL tautan:', 'https://');
+          if (url && url.trim()) {
+            document.execCommand('createLink', false, url.trim());
+          }
+        } else if (val) {
+          document.execCommand(cmd, false, val);
+        } else {
+          document.execCommand(cmd, false, null);
+        }
+        hiddenKonten.value = areaEditor.innerHTML;
+      });
+    });
+
     el.querySelector('.btn-hapus-editor').addEventListener('click', function () { el.remove(); });
     return el;
   }

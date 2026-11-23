@@ -432,9 +432,9 @@
       const jenjang = m.Jenjang
         ? '<span class="badge-jenjang">Kelas ' + escapeHtml(m.Jenjang) + '</span>'
         : '';
-      // Pratinjau konten: potong agar kartu tetap rapi
-      const konten = String(m.Konten || '');
-      const pratinjau = konten.length > 180 ? konten.slice(0, 180) + '...' : konten;
+      // Pratinjau konten: strip HTML untuk teks polos, potong agar kartu tetap rapi
+      const kontenPolos = stripHtml(m.Konten);
+      const pratinjau = kontenPolos.length > 180 ? kontenPolos.slice(0, 180) + '...' : kontenPolos;
       const tautan = m.Tautan
         ? '<a class="tautan-materi" href="' + escapeAttr(m.Tautan) + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Buka Tautan &#8599;</a>'
         : '';
@@ -469,7 +469,7 @@
     isi.innerHTML =
       '<h3 id="judul-modal-materi" class="judul-modal-materi">' + escapeHtml(m.Judul) + '</h3>' +
       (badge || jenjang ? '<div class="badge-materi" style="margin-bottom:12px">' + badge + jenjang + '</div>' : '') +
-      '<div class="konten-materi">' + escapeHtml(m.Konten) + '</div>' +
+      '<div class="konten-materi">' + sanitizeHtml(m.Konten) + '</div>' +
       (tautan ? '<div class="aksi-detail-materi">' + tautan + '</div>' : '');
     const modal = document.getElementById('modal-materi');
     modal.hidden = false;
@@ -1482,6 +1482,35 @@
 
   function escapeAttr(teks) {
     return escapeHtml(teks);
+  }
+
+  // Hapus tag HTML untuk pratinjau teks polos
+  function stripHtml(html) {
+    if (!html) return '';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = String(html);
+    return (tmp.textContent || tmp.innerText || '').trim();
+  }
+
+  // Sanitasi HTML untuk render konten materi yang aman dari XSS
+  function sanitizeHtml(html) {
+    if (!html) return '';
+    var s = String(html);
+    // Hapus script dan style beserta isinya
+    s = s.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    s = s.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+    // Hapus atribut on* (onclick, onload, onerror, dll)
+    s = s.replace(/\son\w+\s*=\s*"[^"]*"/gi, '');
+    s = s.replace(/\son\w+\s*=\s*'[^']*'/gi, '');
+    s = s.replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+    // Hapus javascript: di href/src
+    s = s.replace(/(href|src)\s*=\s*"javascript:[^"]*"/gi, '$1="#"');
+    s = s.replace(/(href|src)\s*=\s*'javascript:[[^']*'/gi, "$1='#'");
+    // Hapus tag berbahaya
+    s = s.replace(/<\/?(iframe|object|embed|form|input|button|textarea|select|option|script|style|meta|link|base|frame|frameset|applet)\b[^>]*>/gi, '');
+    // Pastikan link membuka di tab baru
+    s = s.replace(/<a\b/gi, '<a target="_blank" rel="noopener noreferrer"');
+    return s;
   }
 
   // Tangani error yang tidak tertangkap
