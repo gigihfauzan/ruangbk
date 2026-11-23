@@ -502,14 +502,17 @@
 
   // Format jam dari string "HH:MM" atau objek Date
   function formatJam(nilai) {
-    if (!nilai) return '-';
-    // Jika sudah "HH:MM:SS" potong detik
-    const s = String(nilai);
-    const bagian = s.split(':');
-    if (bagian.length >= 2) return bagian[0] + ':' + bagian[1];
+    if (!nilai && nilai !== 0) return '-';
+    var s = String(nilai);
+    // Jika ISO string "1899-12-30T07:00:00.000Z", ekstrak jam:menit
+    var matchISO = s.match(/T(\d{2}):(\d{2})/);
+    if (matchISO) return matchISO[1] + '.' + matchISO[2];
+    // Jika sudah "HH:MM" atau "HH:MM:SS", ambil HH:MM saja
+    var matchJam = s.match(/^(\d{1,2}):(\d{2})/);
+    if (matchJam) return ('0' + matchJam[1]).slice(-2) + '.' + matchJam[2];
     // Coba parse sebagai Date
     try {
-      const d = new Date(s);
+      var d = new Date(s);
       if (!isNaN(d.getTime())) {
         return ('0' + d.getHours()).slice(-2) + '.' + ('0' + d.getMinutes()).slice(-2);
       }

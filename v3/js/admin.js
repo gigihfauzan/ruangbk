@@ -1189,6 +1189,44 @@
 
   // ===== Editor Jadwal Konseling =====
 
+  // Format tanggal untuk <input type="date"> (YYYY-MM-DD)
+  function formatTanggalInput(val) {
+    if (!val && val !== 0) return '';
+    var s = String(val);
+    // Jika ISO string "2026-01-15T00:00:00.000Z", ambil bagian tanggal
+    if (s.indexOf('T') !== -1) return s.split('T')[0];
+    // Jika sudah "2026-01-15", biarkan
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Coba parse sebagai Date
+    try {
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+      }
+    } catch (e) {}
+    return s;
+  }
+
+  // Format jam untuk <input type="time"> (HH:MM)
+  function formatJamInput(val) {
+    if (!val && val !== 0) return '';
+    var s = String(val);
+    // Jika ISO string "1899-12-30T07:00:00.000Z", ekstrak jam:menit
+    var m = s.match(/T(\d{2}):(\d{2})/);
+    if (m) return m[1] + ':' + m[2];
+    // Jika sudah "HH:MM" atau "HH:MM:SS"
+    m = s.match(/^(\d{1,2}):(\d{2})/);
+    if (m) return ('0' + m[1]).slice(-2) + ':' + m[2];
+    // Coba parse sebagai Date
+    try {
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+      }
+    } catch (e) {}
+    return s;
+  }
+
   function opsiGuruUntukJadwal(guruIDTerpilih) {
     const guru = (dataPengaturan && dataPengaturan.guru) ? dataPengaturan.guru : [];
     let html = '<option value=""' + (!guruIDTerpilih ? ' selected' : '') + '>(pilih guru)</option>';
@@ -1215,20 +1253,24 @@
     const el = document.createElement('div');
     el.className = 'kartu-editor kartu-editor-jadwal';
     const terpesan = (String(j.Status || 'Tersedia').toLowerCase() === 'terpesan');
+    // Format tanggal dan jam untuk input (fallback client-side)
+    var tanggalStr = formatTanggalInput(j.Tanggal);
+    var mulaiStr = formatJamInput(j.JamMulai);
+    var selesaiStr = formatJamInput(j.JamSelesai);
     el.innerHTML =
       '<span class="ed-jadwal-id" hidden>' + escapeHtml(j.ID || '') + '</span>' +
       '<div class="grid-form-jadwal">' +
         '<div class="grup-input"><label>Guru BK</label>' +
-          '<select class="ed-jadwal-guru">' + opsiGuruUntukJadwal(j.GuruID || '') + '</select>' +
+          '<select class="ed-jadwal-guru">' + opsiGuruUntukJadwal(String(j.GuruID || '')) + '</select>' +
         '</div>' +
         '<div class="grup-input"><label>Tanggal</label>' +
-          '<input type="date" class="ed-jadwal-tanggal" value="' + escapeAttr(j.Tanggal || '') + '">' +
+          '<input type="date" class="ed-jadwal-tanggal" value="' + escapeAttr(tanggalStr) + '">' +
         '</div>' +
         '<div class="grup-input"><label>Jam Mulai</label>' +
-          '<input type="time" class="ed-jadwal-mulai" value="' + escapeAttr(j.JamMulai || '') + '">' +
+          '<input type="time" class="ed-jadwal-mulai" value="' + escapeAttr(mulaiStr) + '">' +
         '</div>' +
         '<div class="grup-input"><label>Jam Selesai</label>' +
-          '<input type="time" class="ed-jadwal-selesai" value="' + escapeAttr(j.JamSelesai || '') + '">' +
+          '<input type="time" class="ed-jadwal-selesai" value="' + escapeAttr(selesaiStr) + '">' +
         '</div>' +
         '<div class="grup-input"><label>Status</label>' +
           '<select class="ed-jadwal-status">' +
