@@ -794,7 +794,7 @@
   }
 
   // Daftar field per bagian (hanya field ini yang dikirim saat simpan bagian tsb)
-  const FIELD_IDENTITAS = ['namaSekolah', 'namaSingkat', 'alamat', 'kontakSekolah', 'kepalaSekolah', 'penandaTangan', 'jabatanPenandaTangan', 'nipPenandaTangan', 'nipKepalaSekolah', 'logo'];
+  const FIELD_IDENTITAS = ['namaSekolah', 'namaSingkat', 'alamat', 'kontakSekolah', 'kepalaSekolah', 'penandaTangan', 'jabatanPenandaTangan', 'nipPenandaTangan', 'nipKepalaSekolah', 'kotaTandaTangan', 'logo'];
   const FIELD_PERIODE = ['tahunAjaranAktif', 'semesterAktif', 'jamLayanan', 'temaWarna', 'teksSambutan', 'banner'];
   const FIELD_PRIVASI = ['kebijakanPrivasi', 'kontakDarurat', 'emailNotifikasi', 'emailAdmin'];
 

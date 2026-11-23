@@ -109,9 +109,12 @@
     const p = pengaturan || {};
     const now = new Date();
     const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const teksTanggal = now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
+    // Tanggal dengan lokasi: "Purwokerto, 23 November 2026"
+    var teksTanggal = now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
+    if (p.kotaTandaTangan) {
+      teksTanggal = escapeTeksPDF(p.kotaTandaTangan) + ', ' + teksTanggal;
+    }
 
-    // Posisi tanda tangan
     const xKanan = LEBAR_HAL - MARGIN - 70;
     const xKiri = MARGIN;
     let ySig = y || 240;
@@ -119,11 +122,11 @@
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
 
-    // Jika sertakan kepala sekolah: dua kolom (kiri = kepala, kanan = BK)
     if (sertakanKepala && p.kepalaSekolah) {
+      // SATU tanggal di tengah-atas, lalu dua tanda tangan tanpa tanggal
+      doc.text(teksTanggal, LEBAR_HAL / 2 - 35, ySig);
+      ySig += 8;
       // Kiri: Kepala Sekolah
-      doc.text(teksTanggal, xKiri, ySig);
-      ySig += 6;
       doc.text('Kepala Sekolah', xKiri, ySig);
       ySig += 18;
       doc.setFont('helvetica', 'bold');
@@ -132,12 +135,9 @@
       doc.setFontSize(9);
       ySig += 4;
       doc.text('NIP: ' + escapeTeksPDF(p.nipKepalaSekolah || '....................'), xKiri, ySig);
-
-      // Kanan: Guru BK (reset y ke posisi awal)
-      ySig = y || 240;
+      // Kanan: Guru BK (reset y ke posisi jabatan)
+      ySig = (y || 240) + 8;
       doc.setFontSize(10);
-      doc.text(teksTanggal, xKanan, ySig);
-      ySig += 6;
       doc.text(escapeTeksPDF(p.jabatanPenandaTangan || 'Guru Bimbingan Konseling'), xKanan, ySig);
       ySig += 18;
       doc.setFont('helvetica', 'bold');
@@ -147,7 +147,7 @@
       ySig += 4;
       doc.text('NIP: ' + escapeTeksPDF(p.nipPenandaTangan || '....................'), xKanan, ySig);
     } else {
-      // Hanya tanda tangan BK (kanan)
+      // Hanya tanda tangan BK (kanan) — tanggal dengan lokasi
       doc.text(teksTanggal, xKanan, ySig);
       ySig += 6;
       doc.text(escapeTeksPDF(p.jabatanPenandaTangan || 'Guru Bimbingan Konseling'), xKanan, ySig);
