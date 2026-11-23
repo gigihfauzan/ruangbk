@@ -105,33 +105,60 @@
 
   // ===== Blok Tanda Tangan =====
 
-  function tambahTandaTangan(doc, pengaturan, y) {
+  function tambahTandaTangan(doc, pengaturan, y, sertakanKepala) {
     const p = pengaturan || {};
-    // Posisi kanan
+    const now = new Date();
+    const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const teksTanggal = now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
+
+    // Posisi tanda tangan
     const xKanan = LEBAR_HAL - MARGIN - 70;
+    const xKiri = MARGIN;
     let ySig = y || 240;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    // Kota, tanggal (gunakan tanggal hari ini)
-    const now = new Date();
-    const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const teksTanggal = (p.alamat ? '' : '') + now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
-    doc.text(teksTanggal, xKanan, ySig);
 
-    // Jabatan
-    ySig += 6;
-    doc.text(escapeTeksPDF(p.jabatanPenandaTangan || 'Guru Bimbingan Konseling'), xKanan, ySig);
+    // Jika sertakan kepala sekolah: dua kolom (kiri = kepala, kanan = BK)
+    if (sertakanKepala && p.kepalaSekolah) {
+      // Kiri: Kepala Sekolah
+      doc.text(teksTanggal, xKiri, ySig);
+      ySig += 6;
+      doc.text('Kepala Sekolah', xKiri, ySig);
+      ySig += 18;
+      doc.setFont('helvetica', 'bold');
+      doc.text(escapeTeksPDF(p.kepalaSekolah), xKiri, ySig);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      ySig += 4;
+      doc.text('NIP: ' + escapeTeksPDF(p.nipKepalaSekolah || '....................'), xKiri, ySig);
 
-    // Ruang tanda tangan
-    ySig += 18;
-    doc.setFont('helvetica', 'bold');
-    doc.text(escapeTeksPDF(p.penandaTangan || '............................'), xKanan, ySig);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    ySig += 4;
-    doc.text('NIP/NUPTK: ....................', xKanan, ySig);
+      // Kanan: Guru BK (reset y ke posisi awal)
+      ySig = y || 240;
+      doc.setFontSize(10);
+      doc.text(teksTanggal, xKanan, ySig);
+      ySig += 6;
+      doc.text(escapeTeksPDF(p.jabatanPenandaTangan || 'Guru Bimbingan Konseling'), xKanan, ySig);
+      ySig += 18;
+      doc.setFont('helvetica', 'bold');
+      doc.text(escapeTeksPDF(p.penandaTangan || '............................'), xKanan, ySig);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      ySig += 4;
+      doc.text('NIP: ' + escapeTeksPDF(p.nipPenandaTangan || '....................'), xKanan, ySig);
+    } else {
+      // Hanya tanda tangan BK (kanan)
+      doc.text(teksTanggal, xKanan, ySig);
+      ySig += 6;
+      doc.text(escapeTeksPDF(p.jabatanPenandaTangan || 'Guru Bimbingan Konseling'), xKanan, ySig);
+      ySig += 18;
+      doc.setFont('helvetica', 'bold');
+      doc.text(escapeTeksPDF(p.penandaTangan || '............................'), xKanan, ySig);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      ySig += 4;
+      doc.text('NIP: ' + escapeTeksPDF(p.nipPenandaTangan || '....................'), xKanan, ySig);
+    }
 
     return ySig + 5;
   }
@@ -140,7 +167,7 @@
 
   // buatLembarKasus(kiriman, balasan, pengaturan, kategoriNama, sertakanIdentitas)
   // Mengembalikan objek jsPDF doc.
-  function buatLembarKasus(kiriman, balasan, pengaturan, kategoriNama, sertakanIdentitas) {
+  function buatLembarKasus(kiriman, balasan, pengaturan, kategoriNama, sertakanIdentitas, sertakanKepala) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const p = pengaturan || {};
@@ -270,7 +297,7 @@
 
     // Tanda tangan
     const ySig = Math.max(y + 10, 240);
-    tambahTandaTangan(doc, p, ySig);
+    tambahTandaTangan(doc, p, ySig, sertakanKepala);
 
     // RAHASIA di semua halaman
     tambahRahasiaSemuaHalaman(doc);
@@ -292,7 +319,7 @@
   // ===== Rekap Periodik =====
 
   // buatRekap(daftarKiriman, pengaturan, judulPeriode, filterInfo, sertakanIdentitas)
-  function buatRekap(daftarKiriman, pengaturan, judulPeriode, filterInfo, sertakanIdentitas) {
+  function buatRekap(daftarKiriman, pengaturan, judulPeriode, filterInfo, sertakanIdentitas, sertakanKepala) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const p = pengaturan || {};
@@ -405,7 +432,7 @@
     // Tanda tangan di halaman terakhir
     const yAkhir = doc.lastAutoTable.finalY + 15;
     doc.setPage(doc.internal.getNumberOfPages());
-    tambahTandaTangan(doc, p, Math.min(yAkhir, TINGGI_HAL - 40));
+    tambahTandaTangan(doc, p, Math.min(yAkhir, TINGGI_HAL - 40), sertakanKepala);
 
     // RAHASIA di semua halaman
     tambahRahasiaSemuaHalaman(doc);

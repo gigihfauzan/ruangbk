@@ -794,7 +794,7 @@
   }
 
   // Daftar field per bagian (hanya field ini yang dikirim saat simpan bagian tsb)
-  const FIELD_IDENTITAS = ['namaSekolah', 'namaSingkat', 'alamat', 'kontakSekolah', 'kepalaSekolah', 'penandaTangan', 'jabatanPenandaTangan', 'logo'];
+  const FIELD_IDENTITAS = ['namaSekolah', 'namaSingkat', 'alamat', 'kontakSekolah', 'kepalaSekolah', 'penandaTangan', 'jabatanPenandaTangan', 'nipPenandaTangan', 'nipKepalaSekolah', 'logo'];
   const FIELD_PERIODE = ['tahunAjaranAktif', 'semesterAktif', 'jamLayanan', 'temaWarna', 'teksSambutan', 'banner'];
   const FIELD_PRIVASI = ['kebijakanPrivasi', 'kontakDarurat', 'emailNotifikasi', 'emailAdmin'];
 
@@ -1673,7 +1673,8 @@
     const isi = document.getElementById('isi-dialog-pdf');
     isi.innerHTML =
       '<div class="grup-input"><label class="cek-box"><input type="checkbox" id="pdf-identitas"> Sertakan identitas siswa di laporan</label></div>' +
-      '<p class="catatan-pdf">Identitas disembunyikan secara default untuk melindungi siswa. Centang hanya jika perlu untuk guru BK tujuan.</p>';
+      '<div class="grup-input"><label class="cek-box"><input type="checkbox" id="pdf-kepala"> Sertakan tanda tangan kepala sekolah</label></div>' +
+      '<p class="catatan-pdf">Identitas disembunyikan secara default untuk melindungi siswa. Centang hanya jika perlu untuk guru BK tujuan. Tanda tangan kepala sekolah hanya jika laporan resmi memerlukannya.</p>';
     document.getElementById('judul-dialog-pdf').textContent = 'Lembar Kasus PDF';
     document.getElementById('dialog-pdf').hidden = false;
   }
@@ -1696,13 +1697,15 @@
         '<div class="grup-input"><label for="pdf-rekap-jenjang">Jenjang</label><select id="pdf-rekap-jenjang"><option value="">Semua</option><option value="7">Kelas 7</option><option value="8">Kelas 8</option><option value="9">Kelas 9</option></select></div>' +
         '<div class="grup-input"><label for="pdf-rekap-bulan">Bulan (untuk rekap bulanan)</label><input type="month" id="pdf-rekap-bulan"></div>' +
       '</div>' +
-      '<div class="grup-input"><label class="cek-box"><input type="checkbox" id="pdf-identitas"> Sertakan identitas siswa</label></div>';
+      '<div class="grup-input"><label class="cek-box"><input type="checkbox" id="pdf-identitas"> Sertakan identitas siswa</label></div>' +
+      '<div class="grup-input"><label class="cek-box"><input type="checkbox" id="pdf-kepala"> Sertakan tanda tangan kepala sekolah</label></div>';
     document.getElementById('judul-dialog-pdf').textContent = 'Laporan Rekap PDF';
     document.getElementById('dialog-pdf').hidden = false;
   }
 
   async function generatePDF() {
     const sertakanIdentitas = document.getElementById('pdf-identitas').checked;
+    const sertakanKepala = document.getElementById('pdf-kepala') ? document.getElementById('pdf-kepala').checked : false;
     tutupDialogPDF();
     tampilkanMemuat(true, 'Membuat PDF...');
 
@@ -1713,7 +1716,7 @@
       try {
         const resp = await panggilAPI('ambilDetailKiriman', { idKiriman: idKirimanPDF });
         if (resp.ok && resp.data) {
-          const doc = BKPDF.buatLembarKasus(resp.data.kiriman, resp.data.balasan, p, resp.data.kategoriNama, sertakanIdentitas);
+          const doc = BKPDF.buatLembarKasus(resp.data.kiriman, resp.data.balasan, p, resp.data.kategoriNama, sertakanIdentitas, sertakanKepala);
           const namaFile = 'LembarKasus_' + idKirimanPDF;
           await tawarkanPDF(doc, namaFile);
         } else {
@@ -1747,7 +1750,7 @@
             judul = 'Rekap Tahunan TA ' + (ta || '');
             filterInfo = 'Semester: ' + (sem || 'Semua') + ' | Jenjang: ' + (jenjang ? 'Kelas ' + jenjang : 'Semua');
           }
-          const doc = BKPDF.buatRekap(daftar, p, judul, filterInfo, sertakanIdentitas);
+          const doc = BKPDF.buatRekap(daftar, p, judul, filterInfo, sertakanIdentitas, sertakanKepala);
           const namaFile = 'Rekap_' + judul.replace(/[^a-zA-Z0-9]/g, '_');
           await tawarkanPDF(doc, namaFile);
         } else {
