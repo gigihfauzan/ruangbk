@@ -124,7 +124,8 @@
 
     if (sertakanKepala && p.kepalaSekolah) {
       // SATU tanggal di tengah-atas, lalu dua tanda tangan tanpa tanggal
-      doc.text(teksTanggal, LEBAR_HAL / 2 - 35, ySig);
+      // doc.text(teksTanggal, LEBAR_HAL / 2 - 35, ySig);
+      doc.text(teksTanggal, xKanan, ySig);
       ySig += 8;
       // Kiri: Kepala Sekolah
       doc.text('Kepala Sekolah', xKiri, ySig);
