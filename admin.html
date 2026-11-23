@@ -6,7 +6,7 @@
   <meta name="description" content="Panel admin Layanan BK SMP">
   <meta name="theme-color" content="#0d9488">
   <meta name="robots" content="noindex, nofollow">
-  <title>Admin BK SMP Negeri 7 Purwokerto</title>
+  <title>Admin BK SMP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -19,7 +19,6 @@
     <div class="kartu-login">
       <div class="logo-login" aria-hidden="true">&#128274;</div>
       <h1>Login Admin BK</h1>
-      <h1>SMP Negeri 7 Purwokerto</h1>
       <p class="sub-login">Masukkan kata sandi untuk mengelola kiriman siswa.</p>
       <form id="form-login" autocomplete="off">
         <div class="grup-input">
@@ -42,7 +41,7 @@
         <div class="identitas-admin">
           <img id="admin-logo" class="logo-admin" alt="" hidden>
           <div>
-            <strong id="admin-nama-sekolah">Admin BK Negeri 7 Purwokerto</strong>
+            <strong id="admin-nama-sekolah">Admin BK</strong>
             <small id="admin-periode"></small>
           </div>
         </div>
@@ -246,6 +245,18 @@
               <div class="grup-input">
                 <label for="set-jabatan">Jabatan Penanda Tangan</label>
                 <input type="text" id="set-jabatan" data-pengaturan="jabatanPenandaTangan" maxlength="100">
+              </div>
+              <div class="grup-input">
+                <label for="set-nip-bk">NIP Penanda Tangan (Guru BK)</label>
+                <input type="text" id="set-nip-bk" data-pengaturan="nipPenandaTangan" maxlength="30" placeholder="NIP guru BK untuk laporan PDF">
+              </div>
+              <div class="grup-input">
+                <label for="set-nip-kepala">NIP Kepala Sekolah</label>
+                <input type="text" id="set-nip-kepala" data-pengaturan="nipKepalaSekolah" maxlength="30" placeholder="NIP kepala sekolah (untuk laporan jika perlu)">
+              </div>
+              <div class="grup-input">
+                <label for="set-kota">Kota Tanda Tangan Dokumen</label>
+                <input type="text" id="set-kota" data-pengaturan="kotaTandaTangan" maxlength="50" placeholder="Mis. Purwokerto">
               </div>
             </div>
             <div class="grup-input">
