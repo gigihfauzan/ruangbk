@@ -1,1293 +1,1132 @@
-/**
- * Logika Aplikasi Siswa - Portal Bimbingan & Konseling SMP
- * Tanpa framework, tanpa pelacakan identitas/IP, proteksi XSS penuh.
- */
+// js/app.js - Logika halaman siswa Layanan BK SMP
 (function () {
   'use strict';
 
-  var KATA_KUNCI_BAHAYA_LOKAL = [
-    'bunuh diri',
-    'mengakhiri hidup',
-    'ingin mati',
-    'pengen mati',
-    'mau mati',
-    'menyakiti diri',
-    'nyakitin diri',
-    'lukai diri',
-    'melukai diri',
-    'sayat tangan',
-    'silet tangan',
-    'overdosis',
-    'dipukul',
-    'dipukuli',
-    'disiksa',
-    'dilecehkan',
-    'pelecehan',
-    'diperkosa',
-    'pencabulan',
-    'diancam dibunuh',
-    'takut pulang'
+  // ===== State =====
+  let dataPublik = null;
+  let langkahSaatIni = 1;
+  let modeAnonim = null; // null | true | false
+  let lampiranTerpilih = []; // array {nama, tipe, data, ukuran}
+
+  // ===== Konstanta =====
+
+  // Batas lampiran
+  const MAKS_LAMPIRAN = 3;
+  const MAKS_UKURAN_LAMPIRAN = 2 * 1024 * 1024; // 2 MB
+  const MAKS_LEBAR_GAMBAR = 1200; // piksel
+  const KUALITAS_GAMBAR = 0.7;
+  const TIPE_GAMBAR_DIIZINKAN = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const TIPE_DOKUMEN_DIIZINKAN = ['application/pdf'];
+
+  // Kata kunci bahaya (harus sama dengan di server)
+  const KATA_BAHAYA = [
+    'akhiri hidup', 'mengakhiri hidup', 'bunuh diri', 'ingin mati', 'tidak ingin hidup',
+    'menyakiti diri', 'melukai diri', 'memotong tangan', 'memotong pergelangan', 'memotong diri',
+    'putus asa', 'tak tahan lagi', 'tidak tahan lagi',
+    'dipukul', 'dipukuli', 'dibenturkan', 'ditendang', 'dianiaya', 'penganiayaan',
+    'digigit', 'dicekik', 'ditusuk', 'ditelan',
+    'dilecehkan', 'diperkosa', 'disentuh paksa', 'pelcehan', 'pelecehan', 'kekerasan seksual'
   ];
 
-  var state = {
-    publicData: null,
-    activeView: 'beranda',
-    stepIndex: 0,
-    waktuMulaiForm: 0,
-    terakhirKodeTiket: '',
-    form: {
-      anonim: null,        // true | false
-      jenjang: '',         // '7' | '8' | '9'
-      kelas: '',
-      nama: '',
-      kategoriId: '',
-      urgensi: 'Sedang',
-      guruTujuanId: 'SEMUA',
-      pesan: '',
-      preferensiBalasan: 'Website'
-    }
+  // Daftar langkah form
+  const SEMUA_LANGKAH = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  // Label status untuk tampilan
+  const LABEL_STATUS = {
+    'Baru': { teks: 'Diterima', kelas: 'baru' },
+    'Dibaca': { teks: 'Sudah Dibaca', kelas: 'dibaca' },
+    'Ditangani': { teks: 'Sedang Ditangani', kelas: 'ditangani' },
+    'Selesai': { teks: 'Selesai', kelas: 'selesai' },
+    'Dirujuk': { teks: 'Dirujuk', kelas: 'dirujuk' }
   };
 
-  // ==========================================================================
-  // INISIALISASI & KOMUNIKASI API
-  // ==========================================================================
+  // Situs netral untuk tombol Keluar Cepat
+  const URL_KELUAR = 'https://www.google.com';
+
+  // ===== API =====
+
+  async function panggilAPI(aksi, payload) {
+    const body = JSON.stringify(Object.assign({ a: aksi }, payload || {}));
+    console.log('[BK] Kirim:', aksi, '| ukuran:', body.length, 'byte');
+    let res;
+    try {
+      res = await fetch(CONFIG.WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: body
+      });
+    } catch (e) {
+      console.error('[BK] Fetch gagal:', e);
+      throw new Error('Tidak dapat terhubung ke server (jaringan/CORS).');
+    }
+    const teks = await res.text();
+    console.log('[BK] Respons:', res.status, '| isi:', teks.slice(0, 300));
+    try {
+      return JSON.parse(teks);
+    } catch (e) {
+      console.error('[BK] Respons bukan JSON. Kemungkinan URL salah atau server error. Isi:', teks.slice(0, 500));
+      throw new Error('Server mengembalikan halaman non-JSON. Periksa URL Web App di js/config.js.');
+    }
+  }
+
+  // ===== Inisialisasi =====
 
   document.addEventListener('DOMContentLoaded', function () {
-    ikatEventUtama();
+    pasangEventListener();
     muatDataPublik();
   });
 
-  function ikatEventUtama() {
-    // Tombol Keluar Cepat (langsung alihkan ke situs netral)
-    var btnQuickExit = document.getElementById('btn-quick-exit');
-    if (btnQuickExit) {
-      btnQuickExit.addEventListener('click', function () {
-        try {
-          window.sessionStorage.clear();
-        } catch (e) {
-          // Abaikan jika penyimpanan dibatasi browser
-        }
-        window.location.replace('https://www.google.com');
-      });
+  // Validasi format URL Web App, kembalikan pesan galat spesifik atau null jika OK
+  function validasiURLWebApp() {
+    const url = CONFIG.WEB_APP_URL || '';
+    if (!url || url === 'MASUKKAN_URL_WEB_APP_DI_SINI') {
+      return 'URL Web App belum diisi. Buka js/config.js dan ganti teks MASUKKAN_URL_WEB_APP_DI_SINI dengan URL deployment Anda.';
     }
-
-    // Navigasi antar tampilan
-    document.addEventListener('click', function (e) {
-      var targetNav = e.target.closest('[data-nav]');
-      if (targetNav) {
-        e.preventDefault();
-        var tujuan = targetNav.getAttribute('data-nav');
-        gantiTampilan(tujuan);
-      }
-    });
-
-    // Tombol Muat Ulang saat galat
-    var btnRetry = document.getElementById('btn-retry-init');
-    if (btnRetry) {
-      btnRetry.addEventListener('click', muatDataPublik);
+    if (url.indexOf('script.google.com/macros') === -1) {
+      return 'URL tidak terlihat sebagai URL Apps Script. Pastikan berbentuk https://script.google.com/macros/d/.../exec';
     }
-
-    // Navigasi Wizard Form Curhat
-    document.getElementById('btn-step-prev').addEventListener('click', langkahSebelumnya);
-    document.getElementById('btn-step-next').addEventListener('click', langkahBerikutnya);
-
-    // Salin Kode Tiket
-    document.getElementById('btn-copy-ticket').addEventListener('click', function () {
-      salinTeks(state.terakhirKodeTiket);
-    });
-
-    document.getElementById('btn-go-check').addEventListener('click', function () {
-      var inputTiket = document.getElementById('input-kode-tiket');
-      if (inputTiket && state.terakhirKodeTiket) {
-        inputTiket.value = state.terakhirKodeTiket;
-      }
-      gantiTampilan('cek');
-    });
-
-    document.getElementById('btn-new-curhat').addEventListener('click', function () {
-      resetFormCurhat();
-      renderLangkahWizard();
-    });
-
-    // Form Cek Balasan
-    document.getElementById('form-cek-tiket').addEventListener('submit', tanganiCekBalasan);
-  }
-
-  async function panggilApi(action, payload) {
-    var url = (window.BK_CONFIG && window.BK_CONFIG.WEB_APP_URL) ? window.BK_CONFIG.WEB_APP_URL.trim() : '';
-    if (!url || url.indexOf('GANTI_DENGAN_ID_DEPLOYMENT_ANDA') !== -1) {
-      throw new Error('URL Web App belum diatur pada berkas js/config.js.');
+    if (url.indexOf('/dev') !== -1) {
+      return 'Anda memakai URL /dev (mode uji). URL ini hanya bisa diakses saat login ke akun Google. Gunakan URL /exec dari Deploy > New deployment > Web app.';
     }
-
-    var respons = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify({
-        action: action,
-        token: '',
-        payload: payload || {}
-      })
-    });
-
-    if (!respons.ok) {
-      throw new Error('Server merespons dengan status ' + respons.status + '.');
+    if (url.indexOf('/edit') !== -1) {
+      return 'Anda memakai URL editor (/edit), bukan URL deployment. Gunakan URL /exec dari Deploy > New deployment > Web app.';
     }
-
-    var json = await respons.json();
-    if (!json || json.ok !== true) {
-      throw new Error((json && json.error) ? json.error : 'Permintaan tidak dapat diproses.');
+    if (url.indexOf('/exec') === -1) {
+      return 'URL tidak berakhiran /exec. Pastikan memakai URL deployment yang berakhiran /exec.';
     }
-
-    return json.data;
+    return null;
   }
 
   async function muatDataPublik() {
-    tampilkanElemen('app-loading', true);
-    tampilkanElemen('app-error', false);
-
+    tampilkanMemuat(true);
+    // Cek URL dulu sebelum mencoba fetch
+    const galatURL = validasiURLWebApp();
+    if (galatURL) {
+      tampilkanError(galatURL);
+      tampilkanMemuat(false);
+      return;
+    }
     try {
-      var data = await panggilApi('getPublicData', {});
-      state.publicData = data;
-
-      terapkanIdentitasDanTema(data.pengaturan || {});
-      renderBeranda();
-      renderDaftarGuru();
-      renderLayananDanFaq();
-      renderHalamanPrivasi();
-
-      tampilkanElemen('app-loading', false);
-      gantiTampilan('beranda');
-    } catch (err) {
-      tampilkanElemen('app-loading', false);
-      document.getElementById('app-error-msg').textContent = err.message || 'Gagal memuat data layanan BK.';
-      tampilkanElemen('app-error', true);
-    }
-  }
-
-  // ==========================================================================
-  // PENGATURAN TEMA, IDENTITAS, & NAVIGASI TAMPILAN
-  // ==========================================================================
-
-  function terapkanIdentitasDanTema(pengaturan) {
-    var tema = pengaturan.temaWarna || 'teal-hangat';
-    document.documentElement.setAttribute('data-theme', tema);
-
-    var namaSingkat = pengaturan.namaSingkat || pengaturan.namaSekolah || 'Ruang BK SMP';
-    var namaSekolah = pengaturan.namaSekolah || 'SMP';
-
-    document.title = namaSingkat + ' - Layanan Bimbingan & Konseling';
-    document.getElementById('header-title').textContent = namaSingkat;
-    document.getElementById('header-subtitle').textContent = namaSekolah;
-
-    if (pengaturan.logo && pengaturan.logo.indexOf('data:image/') === 0) {
-      var logoBox = document.getElementById('brand-logo');
-      logoBox.innerHTML = '';
-      var img = document.createElement('img');
-      img.src = pengaturan.logo;
-      img.alt = 'Logo ' + namaSekolah;
-      logoBox.appendChild(img);
-    }
-
-    var footerParts = [namaSekolah];
-    if (pengaturan.alamat) footerParts.push(pengaturan.alamat);
-    if (pengaturan.kontakSekolah) footerParts.push(pengaturan.kontakSekolah);
-    document.getElementById('footer-school-info').textContent = footerParts.join(' • ');
-  }
-
-  function gantiTampilan(namaView) {
-    if (!state.publicData) return;
-
-    var daftarView = ['beranda', 'curhat', 'cek', 'guru', 'layanan', 'privasi'];
-    if (daftarView.indexOf(namaView) === -1) {
-      namaView = 'beranda';
-    }
-
-    state.activeView = namaView;
-
-    for (var i = 0; i < daftarView.length; i++) {
-      var idSec = 'view-' + daftarView[i];
-      tampilkanElemen(idSec, daftarView[i] === namaView);
-    }
-
-    var navBtns = document.querySelectorAll('.nav-btn');
-    for (var j = 0; j < navBtns.length; j++) {
-      var cocok = navBtns[j].getAttribute('data-nav') === namaView;
-      if (cocok) {
-        navBtns[j].setAttribute('aria-current', 'page');
+      const resp = await panggilAPI('ambilDataPublik', {});
+      if (resp.ok && resp.data) {
+        dataPublik = resp.data;
+        terapPengaturan();
+        renderSemua();
       } else {
-        navBtns[j].removeAttribute('aria-current');
+        tampilkanError(resp.error || 'Gagal memuat data layanan. Jalankan Tes Koneksi untuk diagnosis.');
       }
+    } catch (e) {
+      tampilkanError('Tidak bisa terhubung ke server. ' + String(e.message || e) + ' BukaTes Koneksi di beranda untuk diagnosis detail.');
     }
-
-    if (namaView === 'curhat') {
-      if (state.waktuMulaiForm === 0) {
-        resetFormCurhat();
-      }
-      renderLangkahWizard();
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    tampilkanMemuat(false);
   }
 
-  // ==========================================================================
-  // RENDER HALAMAN INFORMASI (BERANDA, GURU, LAYANAN/FAQ, PRIVASI)
-  // ==========================================================================
+  // Tes koneksi server dengan diagnosis spesifik
+  async function tesKoneksiServer() {
+    const hasil = document.getElementById('hasil-tes-koneksi');
+    if (!hasil) return;
+    hasil.hidden = false;
+    hasil.className = 'hasil-tes-koneksi memuat';
+    hasil.innerHTML = '<p>Memeriksa koneksi...</p>';
 
-  function renderBeranda() {
-    var peng = state.publicData.pengaturan || {};
-    var layanan = state.publicData.layanan || [];
-
-    var bannerEl = document.getElementById('home-banner');
-    if (peng.banner && peng.banner.indexOf('data:image/') === 0) {
-      bannerEl.src = peng.banner;
-      bannerEl.classList.remove('hidden');
-    } else {
-      bannerEl.classList.add('hidden');
-    }
-
-    var periode = [];
-    if (peng.tahunAjaranAktif) periode.push('TA ' + peng.tahunAjaranAktif);
-    if (peng.semesterAktif) periode.push('Semester ' + peng.semesterAktif);
-    document.getElementById('home-period-badge').textContent =
-      periode.length > 0 ? ('Ruang Aman Siswa • ' + periode.join(' ')) : 'Ruang Aman Siswa';
-
-    document.getElementById('home-school-name').textContent =
-      'Selamat Datang di ' + (peng.namaSingkat || peng.namaSekolah || 'Ruang BK');
-
-    document.getElementById('home-welcome-text').textContent =
-      peng.teksSambutan || 'Ruang BK hadir untuk mendengarkan ceritamu dengan aman, nyaman, dan tanpa menghakimi.';
-
-    var jamEl = document.getElementById('home-service-hours');
-    if (peng.jamLayanan) {
-      jamEl.textContent = 'Jam Layanan Ruang BK: ' + peng.jamLayanan;
-      jamEl.classList.remove('hidden');
-    } else {
-      jamEl.classList.add('hidden');
-    }
-
-    var grid = document.getElementById('home-services-grid');
-    grid.innerHTML = '';
-    if (layanan.length === 0) {
-      grid.innerHTML = '<div class="empty-state">Informasi layanan belum ditambahkan.</div>';
+    // 1. Validasi URL
+    const galatURL = validasiURLWebApp();
+    if (galatURL) {
+      hasil.className = 'hasil-tes-koneksi galat';
+      hasil.innerHTML = '<p><strong>&#10060; URL bermasalah</strong></p><p>' + escapeHtml(galatURL) + '</p>';
       return;
     }
 
-    for (var i = 0; i < layanan.length; i++) {
-      var item = document.createElement('article');
-      item.className = 'service-item';
-
-      var h3 = document.createElement('h3');
-      h3.textContent = layanan[i].judul;
-
-      var p = document.createElement('p');
-      p.textContent = layanan[i].deskripsi;
-
-      item.appendChild(h3);
-      item.appendChild(p);
-      grid.appendChild(item);
+    // 2. Tes fetch ke server
+    hasil.innerHTML = '<p>URL terlihat benar. Menghubungi server...</p>';
+    try {
+      const resp = await panggilAPI('ambilDataPublik', {});
+      if (resp.ok && resp.data) {
+        const namaSekolah = (resp.data.pengaturan && resp.data.pengaturan.namaSekolah) || '(belum diisi)';
+        const jumlahGuru = (resp.data.guru || []).length;
+        const jumlahKategori = (resp.data.kategori || []).length;
+        hasil.className = 'hasil-tes-koneksi sukses';
+        hasil.innerHTML = '<p><strong>&#9989; Koneksi berhasil!</strong></p>' +
+          '<p>Server merespons dengan benar. Data terbaca:</p>' +
+          '<ul><li>Nama sekolah: ' + escapeHtml(namaSekolah) + '</li>' +
+          '<li>Guru aktif: ' + jumlahGuru + '</li>' +
+          '<li>Kategori: ' + jumlahKategori + '</li></ul>' +
+          '<p>Jika form curhat masih tidak tersimpan, buka Console browser (F12) untuk lihat log detail.</p>';
+      } else if (resp.error) {
+        hasil.className = 'hasil-tes-koneksi galat';
+        hasil.innerHTML = '<p><strong>&#9888;&#65039; Server merespons tapi ada error</strong></p>' +
+          '<p>Pesan error: ' + escapeHtml(resp.error) + '</p>' +
+          '<p>Kemungkinan: fungsi setup() belum dijalankan, atau ada galat di Code.gs. Cek Execution log di editor Apps Script.</p>';
+      } else {
+        hasil.className = 'hasil-tes-koneksi galat';
+        hasil.innerHTML = '<p><strong>&#9888;&#65039; Format respons tidak dikenal</strong></p>' +
+          '<p>Server merespons tapi bukan format yang diharapkan. Pastikan Code.gs sudah diperbarui dengan versi terbaru.</p>';
+      }
+    } catch (e) {
+      hasil.className = 'hasil-tes-koneksi galat';
+      hasil.innerHTML = '<p><strong>&#10060; Tidak bisa terhubung ke server</strong></p>' +
+        '<p>Error: ' + escapeHtml(String(e.message || e)) + '</p>' +
+        '<p><strong>Periksa hal berikut:</strong></p>' +
+        '<ol><li>Deployment Web App: pastikan <em>Who has access</em> = <strong>Anyone</strong> (bukan "Anyone with Google account").</li>' +
+        '<li><em>Execute as</em> = <strong>Me</strong>.</li>' +
+        '<li>Jika baru mengubah Code.gs, buat <em>New deployment</em> baru (versi lama tidak otomatis terbarui).</li>' +
+        '<li>Buka Console browser (F12 > Console) untuk log detail.</li></ol>';
     }
   }
 
-  function renderDaftarGuru() {
-    var daftar = state.publicData.guru || [];
-    var container = document.getElementById('guru-list');
-    container.innerHTML = '';
+  // ===== Terap Pengaturan =====
 
-    if (daftar.length === 0) {
-      container.innerHTML = '<div class="card empty-state">Data Guru BK belum tersedia.</div>';
+  function terapPengaturan() {
+    const p = dataPublik.pengaturan;
+
+    // Tema warna
+    if (p.temaWarna) {
+      document.body.setAttribute('data-tema', p.temaWarna);
+    }
+
+    // Nama sekolah
+    if (p.namaSekolah) {
+      document.title = 'Layanan BK ' + p.namaSekolah;
+      setText('nama-sekolah-utama', p.namaSekolah);
+      setText('footer-nama-sekolah', p.namaSekolah);
+    }
+    if (p.namaSingkat) {
+      setText('nama-singkat-sekolah', p.namaSingkat);
+    }
+
+    // Logo
+    const logo = document.getElementById('logo-sekolah');
+    if (p.logo) {
+      logo.src = p.logo;
+      logo.alt = 'Logo ' + (p.namaSekolah || 'sekolah');
+      logo.hidden = false;
+    }
+
+    // Sambutan
+    if (p.teksSambutan) {
+      setText('teks-sambutan-isi', p.teksSambutan);
+    }
+
+    // Jam layanan
+    if (p.jamLayanan) {
+      setText('jam-layanan-isi', p.jamLayanan);
+    }
+
+    // Periode
+    if (p.tahunAjaranAktif && p.semesterAktif) {
+      setText('periode-isi', 'TA ' + p.tahunAjaranAktif + ' - ' + p.semesterAktif);
+    }
+
+    // Footer
+    if (p.alamat) setText('footer-alamat', p.alamat);
+    if (p.kontakSekolah) setText('footer-kontak', p.kontakSekolah);
+
+    // Banner (background hero)
+    if (p.banner) {
+      const hero = document.getElementById('hero-banner');
+      hero.style.backgroundImage = 'linear-gradient(135deg, rgba(13,148,136,0.85), rgba(15,118,110,0.85)), url("' + p.banner + '")';
+      hero.style.backgroundSize = 'cover';
+      hero.style.backgroundPosition = 'center';
+    }
+
+    // Privasi
+    if (p.kebijakanPrivasi) {
+      const el = document.getElementById('konten-privasi');
+      el.textContent = p.kebijakanPrivasi;
+    }
+
+    // Kontak darurat
+    if (p.kontakDarurat) {
+      const el = document.getElementById('kontak-darurat-isi');
+      el.textContent = p.kontakDarurat;
+      const elCepat = document.getElementById('kontak-darurat-cepat');
+      elCepat.textContent = p.kontakDarurat;
+    }
+  }
+
+  // ===== Render Semua =====
+
+  function renderSemua() {
+    renderLayanan();
+    renderGuru();
+    renderFAQ();
+    renderKategori();
+    renderKelas();
+  }
+
+  function renderLayanan() {
+    const wadah = document.getElementById('ringkasan-layanan');
+    const wadah2 = document.getElementById('daftar-layanan');
+    const layanan = dataPublik.layanan || [];
+    if (layanan.length === 0) {
+      if (wadah) wadah.innerHTML = '<p class="keadaan-kosong">Belum ada layanan ditampilkan.</p>';
+      if (wadah2) wadah2.innerHTML = '<p class="keadaan-kosong">Belum ada layanan ditampilkan.</p>';
       return;
     }
-
-    for (var i = 0; i < daftar.length; i++) {
-      var g = daftar[i];
-      var card = document.createElement('article');
-      card.className = 'teacher-card';
-
-      var avatar = document.createElement('div');
-      avatar.className = 'teacher-avatar';
-      if (g.foto && g.foto.indexOf('data:image/') === 0) {
-        var img = document.createElement('img');
-        img.src = g.foto;
-        img.alt = 'Foto ' + g.nama;
-        avatar.appendChild(img);
-      } else {
-        avatar.textContent = ambilInisial(g.nama);
-      }
-
-      var info = document.createElement('div');
-      info.className = 'teacher-info';
-
-      var h3 = document.createElement('h3');
-      h3.textContent = g.nama;
-
-      var role = document.createElement('div');
-      role.className = 'teacher-role';
-      var teksJenjang = g.jenjang ? (' • Kelas ' + g.jenjang) : '';
-      role.textContent = (g.jabatan || 'Guru BK') + teksJenjang;
-
-      var bio = document.createElement('p');
-      bio.className = 'teacher-bio';
-      bio.textContent = g.bio || 'Siap mendampingi dan mendengarkan cerita siswa.';
-
-      info.appendChild(h3);
-      info.appendChild(role);
-      info.appendChild(bio);
-
-      if (g.kontak) {
-        var kontak = document.createElement('div');
-        kontak.className = 'teacher-contact';
-        kontak.textContent = 'Lokasi / Kontak: ' + g.kontak;
-        info.appendChild(kontak);
-      }
-
-      card.appendChild(avatar);
-      card.appendChild(info);
-      container.appendChild(card);
-    }
+    const html = layanan.map(function (l) {
+      return '<div class="kartu-layanan"><h3>' + escapeHtml(l.Judul) + '</h3><p>' + escapeHtml(l.Deskripsi) + '</p></div>';
+    }).join('');
+    if (wadah) wadah.innerHTML = html;
+    if (wadah2) wadah2.innerHTML = html;
   }
 
-  function renderLayananDanFaq() {
-    var layanan = state.publicData.layanan || [];
-    var faq = state.publicData.faq || [];
-
-    var layananContainer = document.getElementById('layanan-list');
-    layananContainer.innerHTML = '';
-    if (layanan.length === 0) {
-      layananContainer.innerHTML = '<div class="card empty-state">Belum ada daftar layanan.</div>';
-    } else {
-      for (var i = 0; i < layanan.length; i++) {
-        var card = document.createElement('article');
-        card.className = 'service-item';
-        var h3 = document.createElement('h3');
-        h3.textContent = layanan[i].judul;
-        var p = document.createElement('p');
-        p.textContent = layanan[i].deskripsi;
-        card.appendChild(h3);
-        card.appendChild(p);
-        layananContainer.appendChild(card);
-      }
+  function renderGuru() {
+    const wadah = document.getElementById('daftar-guru');
+    const guru = dataPublik.guru || [];
+    if (guru.length === 0) {
+      wadah.innerHTML = '<p class="keadaan-kosong">Belum ada guru BK ditampilkan.</p>';
+      return;
     }
+    wadah.innerHTML = guru.map(function (g) {
+      let fotoHtml;
+      if (g.Foto) {
+        fotoHtml = '<img class="foto-guru" src="' + escapeAttr(g.Foto) + '" alt="Foto ' + escapeAttr(g.Nama) + '">';
+      } else {
+        fotoHtml = '<div class="foto-guru-placeholder" aria-hidden="true">&#129489;</div>';
+      }
+      const jenjangArr = String(g.Jenjang || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      const badgeJenjang = jenjangArr.map(function (j) {
+        return '<span class="badge-jenjang">Kelas ' + escapeHtml(j) + '</span>';
+      }).join('');
+      return '<div class="kartu-guru">' + fotoHtml +
+        '<div class="info-guru"><h3>' + escapeHtml(g.Nama) + '</h3>' +
+        '<div class="jabatan-guru">' + escapeHtml(g.Jabatan || 'Guru BK') + '</div>' +
+        (badgeJenjang ? '<div style="margin-bottom:6px">' + badgeJenjang + '</div>' : '') +
+        (g.Bio ? '<p class="bio-guru">' + escapeHtml(g.Bio) + '</p>' : '') +
+        (g.Kontak ? '<p class="kontak-guru">Kontak: ' + escapeHtml(g.Kontak) + '</p>' : '') +
+        '</div></div>';
+    }).join('');
+  }
 
-    var faqContainer = document.getElementById('faq-list');
-    faqContainer.innerHTML = '';
+  function renderFAQ() {
+    const wadah = document.getElementById('daftar-faq');
+    const faq = dataPublik.faq || [];
     if (faq.length === 0) {
-      faqContainer.innerHTML = '<div class="card empty-state">Belum ada pertanyaan umum (FAQ).</div>';
-    } else {
-      for (var j = 0; j < faq.length; j++) {
-        var details = document.createElement('details');
-        details.className = 'faq-item';
-        if (j === 0) details.open = true;
-
-        var summary = document.createElement('summary');
-        summary.textContent = faq[j].pertanyaan;
-
-        var ans = document.createElement('div');
-        ans.className = 'faq-answer';
-        ans.textContent = faq[j].jawaban;
-
-        details.appendChild(summary);
-        details.appendChild(ans);
-        faqContainer.appendChild(details);
-      }
+      wadah.innerHTML = '<p class="keadaan-kosong">Belum ada FAQ ditampilkan.</p>';
+      return;
     }
+    wadah.innerHTML = faq.map(function (f) {
+      return '<details class="item-faq"><summary>' + escapeHtml(f.Pertanyaan) + '</summary>' +
+        '<div class="jawaban-faq">' + escapeHtml(f.Jawaban) + '</div></details>';
+    }).join('');
   }
 
-  function renderHalamanPrivasi() {
-    var peng = state.publicData.pengaturan || {};
-    document.getElementById('privasi-content').textContent =
-      peng.kebijakanPrivasi || 'Kerahasiaan cerita siswa dijaga oleh Guru BK sesuai kode etik profesi.';
-    document.getElementById('privasi-emergency').textContent =
-      peng.kontakDarurat || 'Hubungi Guru BK atau orang dewasa tepercaya di sekitarmu.';
-  }
-
-  // ==========================================================================
-  // FORM CURHAT BERTAHAP (WIZARD SATU LANGKAH PER LAYAR)
-  // ==========================================================================
-
-  function resetFormCurhat() {
-    state.stepIndex = 0;
-    state.waktuMulaiForm = Date.now();
-    state.form = {
-      anonim: null,
-      jenjang: '',
-      kelas: '',
-      nama: '',
-      kategoriId: '',
-      urgensi: 'Sedang',
-      guruTujuanId: 'SEMUA',
-      pesan: '',
-      preferensiBalasan: 'Website'
-    };
-    document.getElementById('hp-website').value = '';
-    tampilkanElemen('curhat-wizard-card', true);
-    tampilkanElemen('curhat-success-card', false);
-    sembunyikanGalatWizard();
-  }
-
-  function dapatkanDaftarLangkah() {
-    var langkah = [
-      'identitas',
-      'jenjang'
-    ];
-    if (state.form.anonim === false) {
-      langkah.push('dataDiri');
+  function renderKategori() {
+    const wadah = document.getElementById('grid-kategori');
+    const kategori = dataPublik.kategori || [];
+    if (kategori.length === 0) {
+      wadah.innerHTML = '<p class="keadaan-kosong">Belum ada kategori.</p>';
+      return;
     }
-    langkah.push('kategori');
-    langkah.push('urgensi');
-    langkah.push('guru');
-    langkah.push('pesan');
-    langkah.push('preferensi');
-    langkah.push('ringkasan');
-    return langkah;
+    wadah.innerHTML = kategori.map(function (k) {
+      const ikonEskalasi = isAktif(k.Eskalasi) ? ' <span class="badge-jenjang" style="background-color:var(--bahaya-ringan);color:var(--bahaya)" title="Kategori eskalasi TPPK">&#9888;&#65039;</span>' : '';
+      return '<label class="kartu-pilihan">' +
+        '<input type="radio" name="kategoriID" value="' + escapeAttr(k.ID) + '" required>' +
+        '<span class="isi-kartu-pilihan"><strong>' + escapeHtml(k.Nama) + ikonEskalasi + '</strong>' +
+        (k.Deskripsi ? '<small>' + escapeHtml(k.Deskripsi) + '</small>' : '') +
+        '</span></label>';
+    }).join('');
   }
 
-  function renderLangkahWizard() {
-    var langkahList = dapatkanDaftarLangkah();
-    if (state.stepIndex >= langkahList.length) {
-      state.stepIndex = langkahList.length - 1;
-    }
-
-    var kodeLangkah = langkahList[state.stepIndex];
-    var total = langkahList.length;
-    var nomor = state.stepIndex + 1;
-    var persen = Math.round((nomor / total) * 100);
-
-    document.getElementById('wizard-step-label').textContent = 'Langkah ' + nomor + ' dari ' + total;
-    document.getElementById('wizard-step-percent').textContent = persen + '%';
-    document.getElementById('wizard-progress-fill').style.width = persen + '%';
-    document.getElementById('wizard-progressbar').setAttribute('aria-valuenow', String(persen));
-
-    var btnPrev = document.getElementById('btn-step-prev');
-    var btnNext = document.getElementById('btn-step-next');
-
-    btnPrev.style.visibility = state.stepIndex === 0 ? 'hidden' : 'visible';
-    if (kodeLangkah === 'ringkasan') {
-      btnNext.textContent = 'Kirim Ceritaku Sekarang';
-    } else {
-      btnNext.textContent = 'Lanjut';
-    }
-
-    var wadah = document.getElementById('wizard-step-container');
-    wadah.innerHTML = '';
-
-    if (kodeLangkah === 'identitas') {
-      renderLangkahIdentitas(wadah);
-    } else if (kodeLangkah === 'jenjang') {
-      renderLangkahJenjang(wadah);
-    } else if (kodeLangkah === 'dataDiri') {
-      renderLangkahDataDiri(wadah);
-    } else if (kodeLangkah === 'kategori') {
-      renderLangkahKategori(wadah);
-    } else if (kodeLangkah === 'urgensi') {
-      renderLangkahUrgensi(wadah);
-    } else if (kodeLangkah === 'guru') {
-      renderLangkahGuru(wadah);
-    } else if (kodeLangkah === 'pesan') {
-      renderLangkahPesan(wadah);
-    } else if (kodeLangkah === 'preferensi') {
-      renderLangkahPreferensi(wadah);
-    } else if (kodeLangkah === 'ringkasan') {
-      renderLangkahRingkasan(wadah);
-    }
-  }
-
-  function renderLangkahIdentitas(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Bagaimana kamu ingin mengirim cerita?',
-      'Kamu bebas memilih. Keduanya akan dilayani dengan sepenuh hati oleh Guru BK.'
-    ));
-
-    var list = document.createElement('div');
-    list.className = 'choice-list';
-
-    list.appendChild(buatKartuPilihan(
-      state.form.anonim === true,
-      'Anonim (Tanpa Nama & Kelas)',
-      'Identitasmu tidak ditanyakan. Kamu akan mendapat Kode Tiket rahasia untuk membaca balasan.',
-      function () {
-        state.form.anonim = true;
-        state.form.kelas = '';
-        state.form.nama = '';
-        sembunyikanGalatWizard();
-        renderLangkahWizard();
-      }
-    ));
-
-    list.appendChild(buatKartuPilihan(
-      state.form.anonim === false,
-      'Sertakan Identitas (Nama & Kelas)',
-      'Memudahkan Guru BK mengenalimu atau mengajak berdiskusi langsung di sekolah.',
-      function () {
-        state.form.anonim = false;
-        sembunyikanGalatWizard();
-        renderLangkahWizard();
-      }
-    ));
-
-    wadah.appendChild(list);
-  }
-
-  function renderLangkahJenjang(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Kamu duduk di kelas berapa?',
-      'Informasi jenjang diperlukan untuk semua kiriman agar Guru BK dapat menyesuaikan pendampingan.'
-    ));
-
-    var grid = document.createElement('div');
-    grid.className = 'grade-grid';
-
-    var daftarJenjang = ['7', '8', '9'];
-    for (var i = 0; i < daftarJenjang.length; i++) {
-      (function (j) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'grade-btn' + (state.form.jenjang === j ? ' selected' : '');
-        btn.setAttribute('aria-pressed', state.form.jenjang === j ? 'true' : 'false');
-        btn.innerHTML = 'Kelas ' + j + '<span>Jenjang SMP</span>';
-        btn.addEventListener('click', function () {
-          if (state.form.jenjang !== j) {
-            state.form.kelas = '';
-          }
-          state.form.jenjang = j;
-          sembunyikanGalatWizard();
-          renderLangkahWizard();
-        });
-        grid.appendChild(btn);
-      })(daftarJenjang[i]);
-    }
-
-    wadah.appendChild(grid);
-  }
-
-  function renderLangkahDataDiri(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Isi Kelas dan Nama Lengkapmu',
-      'Data ini hanya dilihat oleh Guru BK dan tidak dipublikasikan ke siapa pun.'
-    ));
-
-    var daftarKelas = (state.publicData.kelas || []).filter(function (k) {
-      return String(k.jenjang) === String(state.form.jenjang);
+  function renderKelas() {
+    const select = document.getElementById('input-kelas');
+    if (!dataPublik) return;
+    const semuaKelas = dataPublik.kelas || [];
+    // Ambil jenjang yang dipilih
+    const jenjang = document.querySelector('input[name="jenjang"]:checked');
+    select.innerHTML = '<option value="">Pilih kelas...</option>';
+    if (!jenjang) return;
+    // Bandingkan sebagai string — Google Sheet bisa menyimpan jenjang sebagai angka (7)
+    // sedangkan radio button mengirim string ('7'), jadi gunakan String() agar cocok.
+    const jenjangStr = String(jenjang.value);
+    const kelasCocok = semuaKelas.filter(function (k) { return String(k.Jenjang) === jenjangStr; });
+    kelasCocok.forEach(function (k) {
+      const opt = document.createElement('option');
+      opt.value = k.Kelas;
+      opt.textContent = 'Kelas ' + k.Kelas;
+      select.appendChild(opt);
     });
+  }
 
-    var grpKelas = document.createElement('div');
-    grpKelas.className = 'form-group';
-    var lblKelas = document.createElement('label');
-    lblKelas.className = 'form-label';
-    lblKelas.setAttribute('for', 'field-kelas');
-    lblKelas.textContent = 'Pilih Kelas (Jenjang ' + state.form.jenjang + ')';
-    grpKelas.appendChild(lblKelas);
-
-    if (daftarKelas.length > 0) {
-      var sel = document.createElement('select');
-      sel.id = 'field-kelas';
-      sel.className = 'form-control';
-
-      var optDefault = document.createElement('option');
-      optDefault.value = '';
-      optDefault.textContent = '-- Pilih kelasmu --';
-      sel.appendChild(optDefault);
-
-      for (var i = 0; i < daftarKelas.length; i++) {
-        var opt = document.createElement('option');
-        opt.value = daftarKelas[i].kelas;
-        opt.textContent = daftarKelas[i].kelas;
-        if (state.form.kelas === daftarKelas[i].kelas) {
-          opt.selected = true;
-        }
-        sel.appendChild(opt);
-      }
-
-      sel.addEventListener('change', function () {
-        state.form.kelas = sel.value;
-        sembunyikanGalatWizard();
-      });
-      grpKelas.appendChild(sel);
-    } else {
-      var inpKelas = document.createElement('input');
-      inpKelas.type = 'text';
-      inpKelas.id = 'field-kelas';
-      inpKelas.className = 'form-control';
-      inpKelas.maxLength = 20;
-      inpKelas.placeholder = 'Contoh: ' + state.form.jenjang + 'A';
-      inpKelas.value = state.form.kelas;
-      inpKelas.addEventListener('input', function () {
-        state.form.kelas = inpKelas.value;
-        sembunyikanGalatWizard();
-      });
-      grpKelas.appendChild(inpKelas);
+  function renderGuruTujuan() {
+    const wadah = document.getElementById('grid-guru');
+    if (!dataPublik) return;
+    const semuaGuru = dataPublik.guru || [];
+    const jenjang = document.querySelector('input[name="jenjang"]:checked');
+    if (!jenjang) {
+      wadah.innerHTML = '<p class="keadaan-kosong">Pilih jenjang dulu di langkah sebelumnya.</p>';
+      return;
     }
-
-    var grpNama = document.createElement('div');
-    grpNama.className = 'form-group';
-    var lblNama = document.createElement('label');
-    lblNama.className = 'form-label';
-    lblNama.setAttribute('for', 'field-nama');
-    lblNama.textContent = 'Nama Lengkap';
-    var inpNama = document.createElement('input');
-    inpNama.type = 'text';
-    inpNama.id = 'field-nama';
-    inpNama.className = 'form-control';
-    inpNama.maxLength = 80;
-    inpNama.placeholder = 'Tuliskan nama lengkapmu';
-    inpNama.value = state.form.nama;
-    inpNama.addEventListener('input', function () {
-      state.form.nama = inpNama.value;
-      sembunyikanGalatWizard();
+    const guruCocok = semuaGuru.filter(function (g) {
+      return guruCocokJenjang(g, jenjang.value);
     });
-    grpNama.appendChild(lblNama);
-    grpNama.appendChild(inpNama);
-
-    wadah.appendChild(grpKelas);
-    wadah.appendChild(grpNama);
-  }
-
-  function renderLangkahKategori(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Topik apa yang ingin kamu ceritakan?',
-      'Pilih kategori yang paling mendekati perasaan atau situasimu saat ini.'
-    ));
-
-    var daftarKat = state.publicData.kategori || [];
-    var list = document.createElement('div');
-    list.className = 'choice-list';
-
-    for (var i = 0; i < daftarKat.length; i++) {
-      (function (kat) {
-        var terpilih = state.form.kategoriId === kat.id;
-        list.appendChild(buatKartuPilihan(
-          terpilih,
-          kat.nama,
-          kat.deskripsi,
-          function () {
-            state.form.kategoriId = kat.id;
-            sembunyikanGalatWizard();
-            renderLangkahWizard();
-          }
-        ));
-      })(daftarKat[i]);
-    }
-
-    wadah.appendChild(list);
-  }
-
-  function renderLangkahUrgensi(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Seberapa mendesak hal ini bagimu?',
-      'Ini membantu Guru BK mengatur prioritas pendampingan.'
-    ));
-
-    var opsi = [
-      {
-        nilai: 'Rendah',
-        judul: 'Santai / Berbagi Cerita',
-        sub: 'Tidak terburu-buru, hanya ingin bercerita atau meminta pandangan.'
-      },
-      {
-        nilai: 'Sedang',
-        judul: 'Cukup Mengganggu Pikiran',
-        sub: 'Membuat tidak nyaman dan berharap segera mendapat saran dari Guru BK.'
-      },
-      {
-        nilai: 'Tinggi',
-        judul: 'Sangat Mendesak / Butuh Bantuan Cepat',
-        sub: 'Situasi berat, mengancam keselamatan, atau membutuhkan perhatian segera.'
-      }
-    ];
-
-    var list = document.createElement('div');
-    list.className = 'choice-list';
-
-    for (var i = 0; i < opsi.length; i++) {
-      (function (item) {
-        list.appendChild(buatKartuPilihan(
-          state.form.urgensi === item.nilai,
-          item.judul,
-          item.sub,
-          function () {
-            state.form.urgensi = item.nilai;
-            sembunyikanGalatWizard();
-            renderLangkahWizard();
-          }
-        ));
-      })(opsi[i]);
-    }
-
-    wadah.appendChild(list);
-  }
-
-  function renderLangkahGuru(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Kepada Guru BK siapa cerita ini ditujukan?',
-      'Kamu bisa memilih Guru BK tertentu atau memilih "Siapa saja".'
-    ));
-
-    var list = document.createElement('div');
-    list.className = 'choice-list';
-
-    list.appendChild(buatKartuPilihan(
-      state.form.guruTujuanId === 'SEMUA',
-      'Siapa saja (Guru BK yang tersedia)',
-      'Ceritamu akan ditangani oleh Guru BK yang bertugas.',
-      function () {
-        state.form.guruTujuanId = 'SEMUA';
-        sembunyikanGalatWizard();
-        renderLangkahWizard();
-      }
-    ));
-
-    var daftarGuru = state.publicData.guru || [];
-    for (var i = 0; i < daftarGuru.length; i++) {
-      (function (g) {
-        var subTeks = g.jabatan || 'Guru BK';
-        if (g.jenjang && String(g.jenjang).indexOf(state.form.jenjang) !== -1) {
-          subTeks += ' • Mengampu Kelas ' + state.form.jenjang;
-        }
-        list.appendChild(buatKartuPilihan(
-          state.form.guruTujuanId === g.id,
-          g.nama,
-          subTeks,
-          function () {
-            state.form.guruTujuanId = g.id;
-            sembunyikanGalatWizard();
-            renderLangkahWizard();
-          }
-        ));
-      })(daftarGuru[i]);
-    }
-
-    wadah.appendChild(list);
-  }
-
-  function renderLangkahPesan(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Tuliskan ceritamu di sini',
-      'Ceritakan apa yang kamu rasakan atau alami dengan bahasamu sendiri. Tidak perlu takut salah kata.'
-    ));
-
-    // Kotak dukungan hangat jika terdeteksi kata kunci sensitif
-    var kotakDukungan = document.createElement('div');
-    kotakDukungan.id = 'live-support-banner';
-    kotakDukungan.className = 'alert-box alert-support hidden';
-    kotakDukungan.setAttribute('role', 'status');
-
-    var h4 = document.createElement('h4');
-    h4.textContent = 'Kami Peduli padamu';
-    var p = document.createElement('p');
-    p.style.margin = '0 0 0.5rem';
-    p.textContent = 'Sepertinya kamu sedang menghadapi hal yang sangat berat. Kamu tetap bisa mengirim pesan ini (akan kami tandai sebagai prioritas tinggi), atau hubungi bantuan segera di bawah ini:';
-    var numBox = document.createElement('div');
-    numBox.className = 'emergency-numbers';
-    numBox.textContent = (state.publicData.pengaturan && state.publicData.pengaturan.kontakDarurat) || '';
-
-    kotakDukungan.appendChild(h4);
-    kotakDukungan.appendChild(p);
-    kotakDukungan.appendChild(numBox);
-    wadah.appendChild(kotakDukungan);
-
-    var grp = document.createElement('div');
-    grp.className = 'form-group';
-
-    var lbl = document.createElement('label');
-    lbl.className = 'form-label';
-    lbl.setAttribute('for', 'field-pesan');
-    lbl.textContent = 'Isi Cerita / Pesan (Minimal 10 karakter)';
-
-    var ta = document.createElement('textarea');
-    ta.id = 'field-pesan';
-    ta.className = 'form-control';
-    ta.maxLength = 3000;
-    ta.placeholder = 'Halo Bapak/Ibu Guru BK, akhir-akhir ini aku merasa...';
-    ta.value = state.form.pesan;
-
-    var counter = document.createElement('div');
-    counter.className = 'char-counter';
-    counter.textContent = state.form.pesan.length + ' / 3000 karakter';
-
-    function cekKataBahayaLokal(teks) {
-      var kecil = teks.toLowerCase();
-      var ketemu = false;
-      for (var i = 0; i < KATA_KUNCI_BAHAYA_LOKAL.length; i++) {
-        if (kecil.indexOf(KATA_KUNCI_BAHAYA_LOKAL[i]) !== -1) {
-          ketemu = true;
-          break;
-        }
-      }
-      if (ketemu) {
-        kotakDukungan.classList.remove('hidden');
+    let html = '<label class="kartu-pilihan">' +
+      '<input type="radio" name="guruTujuanID" value="Siapa saja" checked>' +
+      '<span class="isi-kartu-pilihan"><span class="ikon-pilihan" aria-hidden="true">&#129309;</span>' +
+      '<strong>Siapa Saja</strong><small>Guru BK yang tersedia</small></span></label>';
+    html += guruCocok.map(function (g) {
+      let fotoIkon = '&#129489;';
+      let fotoHtml = '';
+      if (g.Foto) {
+        fotoHtml = '<img class="foto-guru" src="' + escapeAttr(g.Foto) + '" alt="" style="width:48px;height:48px;margin-bottom:4px">';
       } else {
-        kotakDukungan.classList.add('hidden');
+        fotoHtml = '<span class="ikon-pilihan" aria-hidden="true">' + fotoIkon + '</span>';
       }
-    }
+      return '<label class="kartu-pilihan">' +
+        '<input type="radio" name="guruTujuanID" value="' + escapeAttr(g.ID) + '">' +
+        '<span class="isi-kartu-pilihan">' + fotoHtml +
+        '<strong>' + escapeHtml(g.Nama) + '</strong>' +
+        '<small>' + escapeHtml(g.Jabatan || 'Guru BK') + '</small></span></label>';
+    }).join('');
+    wadah.innerHTML = html;
+  }
 
-    cekKataBahayaLokal(state.form.pesan);
+  // ===== Event Listener =====
 
-    ta.addEventListener('input', function () {
-      state.form.pesan = ta.value;
-      counter.textContent = ta.value.length + ' / 3000 karakter';
-      sembunyikanGalatWizard();
-      cekKataBahayaLokal(ta.value);
+  function pasangEventListener() {
+    // Navigasi header
+    document.querySelectorAll('.taut-nav').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        navigasiKe(btn.dataset.halaman);
+      });
     });
 
-    grp.appendChild(lbl);
-    grp.appendChild(ta);
-    grp.appendChild(counter);
-    wadah.appendChild(grp);
+    // Tombol dengan data-halaman-tujuan
+    document.addEventListener('click', function (e) {
+      const target = e.target.closest('[data-halaman-tujuan]');
+      if (target) {
+        e.preventDefault();
+        navigasiKe(target.dataset.halamanTujuan);
+      }
+    });
+
+    // Keluar Cepat
+    document.getElementById('btn-keluar-cepat').addEventListener('click', function () {
+      window.location.href = URL_KELUAR;
+    });
+
+    // Form curhat: radio anonim mengubah mode
+    document.querySelectorAll('input[name="anonim"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        modeAnonim = (radio.value === 'true');
+        perbaruiProgres();
+      });
+    });
+
+    // Jenjang berubah -> render kelas dan guru
+    document.querySelectorAll('input[name="jenjang"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        renderKelas();
+        renderGuruTujuan();
+      });
+    });
+
+    // Pesan: hitung karakter dan deteksi bahaya
+    const pesanInput = document.getElementById('input-pesan');
+    pesanInput.addEventListener('input', function () {
+      setText('hitung-pesan', String(pesanInput.value.length));
+      deteksiBahayaForm(pesanInput.value);
+    });
+
+    // Lampiran: proses file yang dipilih
+    document.getElementById('input-lampiran').addEventListener('change', function (e) {
+      prosesFileTerpilih(e.target.files);
+      // Reset input agar bisa memilih file yang sama lagi jika dihapus lalu dipilih ulang
+      this.value = '';
+    });
+
+    // Tombol navigasi langkah
+    document.getElementById('btn-lanjut').addEventListener('click', lanjutLangkah);
+    document.getElementById('btn-kembali').addEventListener('click', kembaliLangkah);
+    document.getElementById('btn-kirim').addEventListener('click', kirimCurhatan);
+
+    // Salin kode
+    document.getElementById('btn-salin-kode').addEventListener('click', function () {
+      const kode = document.getElementById('kode-tiket-nilai').textContent;
+      salinTeks(kode);
+    });
+
+    // Curhat lagi
+    document.getElementById('btn-curhat-lagi').addEventListener('click', function () {
+      resetForm();
+      navigasiKe('curhat');
+    });
+
+    // Form cek balasan
+    document.getElementById('form-cek').addEventListener('submit', function (e) {
+      e.preventDefault();
+      cekBalasan();
+    });
+
+    // Kode input: auto uppercase
+    document.getElementById('input-kode').addEventListener('input', function () {
+      this.value = this.value.toUpperCase();
+    });
   }
 
-  function renderLangkahPreferensi(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Bagaimana kamu ingin ditanggapi?',
-      'Pilih cara komunikasi yang paling membuatmu merasa nyaman.'
-    ));
+  // ===== Navigasi Halaman =====
 
-    var list = document.createElement('div');
-    list.className = 'choice-list';
+  function navigasiKe(nama) {
+    // Sembunyikan semua halaman
+    document.querySelectorAll('.halaman').forEach(function (s) {
+      s.classList.remove('aktif');
+    });
+    // Tampilkan yang dipilih
+    const target = document.getElementById('halaman-' + nama);
+    if (target) {
+      target.classList.add('aktif');
+    }
+    // Update nav aktif
+    document.querySelectorAll('.taut-nav').forEach(function (btn) {
+      btn.classList.toggle('aktif', btn.dataset.halaman === nama);
+    });
+    // Reset scroll ke atas
+    window.scrollTo(0, 0);
 
-    list.appendChild(buatKartuPilihan(
-      state.form.preferensiBalasan === 'Website',
-      'Dibalas lewat website ini',
-      'Guru BK akan menulis balasan yang bisa kamu baca memakai Kode Tiket.',
-      function () {
-        state.form.preferensiBalasan = 'Website';
-        sembunyikanGalatWizard();
-        renderLangkahWizard();
+    // Jika ke curhat, set timestamp mulai
+    if (nama === 'curhat') {
+      const mulai = document.getElementById('input-mulai');
+      if (!mulai.value) {
+        mulai.value = String(Date.now());
       }
-    ));
-
-    list.appendChild(buatKartuPilihan(
-      state.form.preferensiBalasan === 'Bertemu Langsung',
-      'Bertemu langsung dengan Guru BK',
-      'Kamu ingin menjadwalkan obrolan tatap muka di Ruang BK sekolah.',
-      function () {
-        state.form.preferensiBalasan = 'Bertemu Langsung';
-        sembunyikanGalatWizard();
-        renderLangkahWizard();
-      }
-    ));
-
-    wadah.appendChild(list);
+    }
   }
 
-  function renderLangkahRingkasan(wadah) {
-    wadah.appendChild(buatJudulLangkah(
-      'Periksa Kembali Kirimanmu',
-      'Pastikan semua sudah sesuai sebelum dikirim ke Guru BK.'
-    ));
+  // ===== Manajemen Langkah Form =====
 
-    var kategoriNama = '-';
-    var daftarKat = state.publicData.kategori || [];
-    for (var i = 0; i < daftarKat.length; i++) {
-      if (daftarKat[i].id === state.form.kategoriId) {
-        kategoriNama = daftarKat[i].nama;
+  function daftarLangkahTampak() {
+    if (modeAnonim === true) {
+      return [1, 2, 4, 5, 6, 7, 8, 9];
+    }
+    return SEMUA_LANGKAH;
+  }
+
+  function tampilkanLangkah(n) {
+    langkahSaatIni = n;
+    document.querySelectorAll('.langkah').forEach(function (el) {
+      el.classList.toggle('aktif', Number(el.dataset.langkah) === n);
+    });
+    perbaruiProgres();
+    perbaruiTombolNav();
+    if (n === 9) {
+      perbaruiRingkasan();
+    }
+    // Scroll ke atas form
+    const kontainer = document.querySelector('.form-kontainer');
+    if (kontainer) kontainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function perbaruiProgres() {
+    const tampak = daftarLangkahTampak();
+    const idx = tampak.indexOf(langkahSaatIni);
+    const total = tampak.length;
+    const posisi = idx + 1;
+    const persen = (posisi / total) * 100;
+    document.getElementById('progres-isi').style.width = persen + '%';
+    const bar = document.querySelector('.progres-bar');
+    if (bar) {
+      bar.setAttribute('aria-valuenow', String(posisi));
+      bar.setAttribute('aria-valuemax', String(total));
+    }
+    document.getElementById('nomor-langkah').textContent = 'Langkah ' + posisi + ' dari ' + total;
+  }
+
+  function perbaruiTombolNav() {
+    const tampak = daftarLangkahTampak();
+    const idx = tampak.indexOf(langkahSaatIni);
+    const btnKembali = document.getElementById('btn-kembali');
+    const btnLanjut = document.getElementById('btn-lanjut');
+    const btnKirim = document.getElementById('btn-kirim');
+
+    btnKembali.disabled = (idx === 0);
+
+    const isTerakhir = (idx === tampak.length - 1);
+    btnLanjut.hidden = isTerakhir;
+    btnKirim.hidden = !isTerakhir;
+  }
+
+  function langkahBerikutnya(n) {
+    if (n === 2 && modeAnonim === true) return 4;
+    return n + 1;
+  }
+
+  function langkahSebelumnya(n) {
+    if (n === 4 && modeAnonim === true) return 2;
+    return n - 1;
+  }
+
+  function lanjutLangkah() {
+    const error = validasiLangkah(langkahSaatIni);
+    if (error) {
+      tampilkanToast(error, 'error');
+      return;
+    }
+    const berikut = langkahBerikutnya(langkahSaatIni);
+    tampilkanLangkah(berikut);
+  }
+
+  function kembaliLangkah() {
+    const sebelum = langkahSebelumnya(langkahSaatIni);
+    tampilkanLangkah(sebelum);
+  }
+
+  function validasiLangkah(n) {
+    switch (n) {
+      case 1:
+        if (!document.querySelector('input[name="anonim"]:checked')) {
+          return 'Pilih anonim atau sertakan identitas dulu.';
+        }
+        return null;
+      case 2:
+        if (!document.querySelector('input[name="jenjang"]:checked')) {
+          return 'Pilih jenjang kelasmu.';
+        }
+        return null;
+      case 3:
+        if (modeAnonim === false) {
+          const kelas = document.getElementById('input-kelas').value;
+          const nama = document.getElementById('input-nama').value.trim();
+          const noHPVal = document.getElementById('input-nohp').value.trim();
+          if (!kelas) return 'Pilih kelasmu.';
+          if (!nama) return 'Tulis namamu.';
+          if (!noHPVal) return 'Tulis nomor HP-mu untuk kontak darurat.';
+        }
+        return null;
+      case 4:
+        if (!document.querySelector('input[name="kategoriID"]:checked')) {
+          return 'Pilih kategori curhatanmu.';
+        }
+        return null;
+      case 5:
+        if (!document.querySelector('input[name="urgensi"]:checked')) {
+          return 'Pilih tingkat urgensi.';
+        }
+        return null;
+      case 6:
+        // Guru tujuan opsional, "Siapa saja" default sudah checked
+        return null;
+      case 7:
+        const pesan = document.getElementById('input-pesan').value.trim();
+        if (!pesan) return 'Tulis pesanmu dulu.';
+        if (pesan.length < 5) return 'Pesan terlalu pendek. Ceritakan lebih banyak.';
+        return null;
+      case 8:
+        if (!document.querySelector('input[name="preferensiBalasan"]:checked')) {
+          return 'Pilih preferensi balasan.';
+        }
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  // ===== Deteksi Bahaya (Sisi Klien) =====
+
+  function deteksiBahayaTeks(teks) {
+    const lower = String(teks).toLowerCase();
+    for (let i = 0; i < KATA_BAHAYA.length; i++) {
+      if (lower.indexOf(KATA_BAHAYA[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  function deteksiBahayaForm(teks) {
+    const peringatan = document.getElementById('peringatan-bahaya');
+    const terdeteksi = deteksiBahayaTeks(teks);
+    peringatan.hidden = !terdeteksi;
+  }
+
+  // ===== Pemrosesan Lampiran File =====
+
+  // Proses file yang dipilih siswa
+  async function prosesFileTerpilih(daftarFile) {
+    const wadah = document.getElementById('daftar-lampiran');
+    for (let i = 0; i < daftarFile.length; i++) {
+      if (lampiranTerpilih.length >= MAKS_LAMPIRAN) {
+        tampilkanToast('Maksimal ' + MAKS_LAMPIRAN + ' file.', 'peringatan');
         break;
       }
-    }
+      const file = daftarFile[i];
+      // Validasi tipe
+      const tipe = file.type || '';
+      const isGambar = TIPE_GAMBAR_DIIZINKAN.indexOf(tipe) !== -1;
+      const isDokumen = TIPE_DOKUMEN_DIIZINKAN.indexOf(tipe) !== -1;
+      if (!isGambar && !isDokumen) {
+        tampilkanToast('Tipe file tidak didukung: ' + file.name, 'error');
+        continue;
+      }
+      // Untuk dokumen PDF, cek ukuran langsung
+      if (isDokumen && file.size > MAKS_UKURAN_LAMPIRAN) {
+        tampilkanToast('File terlalu besar (maks 2MB): ' + file.name, 'error');
+        continue;
+      }
+      // Tampilkan indikator pemrosesan
+      const idSementara = 'lampiran-proses-' + Date.now() + '-' + i;
+      const elProses = document.createElement('div');
+      elProses.className = 'item-lampiran';
+      elProses.id = idSementara;
+      elProses.innerHTML = '<div class="pratinjau-lampiran-placeholder" aria-hidden="true">&#8987;</div>' +
+        '<div class="info-lampiran"><div class="nama-lampiran">' + escapeHtml(file.name) + '</div>' +
+        '<div class="lampiran-diproses">Memproses...</div></div>';
+      wadah.appendChild(elProses);
 
-    var guruNama = 'Siapa saja (Guru BK yang tersedia)';
-    if (state.form.guruTujuanId && state.form.guruTujuanId !== 'SEMUA') {
-      var daftarGuru = state.publicData.guru || [];
-      for (var j = 0; j < daftarGuru.length; j++) {
-        if (daftarGuru[j].id === state.form.guruTujuanId) {
-          guruNama = daftarGuru[j].nama;
-          break;
+      try {
+        let hasil;
+        if (isGambar) {
+          hasil = await kompresGambar(file);
+        } else {
+          hasil = await bacaDokumen(file);
         }
+        if (hasil) {
+          lampiranTerpilih.push(hasil);
+          elProses.remove();
+          renderDaftarLampiran();
+        } else {
+          elProses.remove();
+          tampilkanToast('Gagal memproses: ' + file.name, 'error');
+        }
+      } catch (e) {
+        elProses.remove();
+        tampilkanToast('Gagal memproses: ' + file.name, 'error');
       }
     }
-
-    var teksIdentitas = state.form.anonim
-      ? ('Anonim (Kelas ' + state.form.jenjang + ')')
-      : (state.form.nama + ' (Kelas ' + state.form.kelas + ')');
-
-    var labelUrgensi = {
-      Rendah: 'Santai / Berbagi Cerita',
-      Sedang: 'Cukup Mengganggu Pikiran',
-      Tinggi: 'Sangat Mendesak / Butuh Bantuan Cepat'
-    }[state.form.urgensi] || state.form.urgensi;
-
-    var labelPref = state.form.preferensiBalasan === 'Website'
-      ? 'Dibalas lewat website ini'
-      : 'Bertemu langsung dengan Guru BK';
-
-    var box = document.createElement('div');
-    box.className = 'summary-list';
-
-    var baris = [
-      ['Identitas', teksIdentitas],
-      ['Topik Cerita', kategoriNama],
-      ['Tingkat Urgensi', labelUrgensi],
-      ['Guru Tujuan', guruNama],
-      ['Preferensi Tanggapan', labelPref],
-      ['Isi Cerita', state.form.pesan]
-    ];
-
-    for (var k = 0; k < baris.length; k++) {
-      var row = document.createElement('div');
-      row.className = 'summary-row';
-
-      var keyEl = document.createElement('span');
-      keyEl.className = 'summary-key';
-      keyEl.textContent = baris[k][0];
-
-      var valEl = document.createElement('span');
-      valEl.className = 'summary-val';
-      valEl.textContent = baris[k][1];
-
-      row.appendChild(keyEl);
-      row.appendChild(valEl);
-      box.appendChild(row);
-    }
-
-    wadah.appendChild(box);
-
-    // Penjelasan jujur dekat tombol kirim sesuai spesifikasi
-    var jujurBox = document.createElement('div');
-    jujurBox.className = 'alert-box alert-info';
-    jujurBox.innerHTML =
-      '<strong>Catatan Kejujuran &amp; Kerahasiaan:</strong> Pesanmu akan diterima oleh Admin/Koordinator BK dan dapat diteruskan kepada Guru BK yang kamu pilih. Kerahasiaan ceritamu dijaga dengan sungguh-sungguh, tetapi ada batasnya apabila ditemukan bahaya serius bagi keselamatan dirimu atau orang lain, maupun tindak kekerasan terhadap anak.';
-
-    wadah.appendChild(jujurBox);
   }
 
-  function validasiLangkahSaatIni() {
-    var langkahList = dapatkanDaftarLangkah();
-    var kode = langkahList[state.stepIndex];
-
-    if (kode === 'identitas' && state.form.anonim === null) {
-      return 'Pilih terlebih dahulu apakah kamu ingin mengirim secara Anonim atau menyertakan identitas.';
-    }
-    if (kode === 'jenjang' && !state.form.jenjang) {
-      return 'Pilih jenjang kelasmu (Kelas 7, 8, atau 9) terlebih dahulu.';
-    }
-    if (kode === 'dataDiri') {
-      if (!state.form.kelas.trim()) {
-        return 'Pilih atau tuliskan kelasmu terlebih dahulu.';
-      }
-      if (state.form.nama.trim().length < 2) {
-        return 'Tuliskan nama lengkapmu minimal 2 karakter.';
-      }
-    }
-    if (kode === 'kategori' && !state.form.kategoriId) {
-      return 'Pilih topik cerita yang paling sesuai terlebih dahulu.';
-    }
-    if (kode === 'urgensi' && !state.form.urgensi) {
-      return 'Pilih tingkat urgensi terlebih dahulu.';
-    }
-    if (kode === 'pesan' && state.form.pesan.trim().length < 10) {
-      return 'Tuliskan ceritamu minimal 10 karakter agar Guru BK dapat memahaminya.';
-    }
-    if (kode === 'preferensi' && !state.form.preferensiBalasan) {
-      return 'Pilih cara tanggapan yang kamu inginkan.';
-    }
-    return '';
-  }
-
-  function langkahSebelumnya() {
-    if (state.stepIndex > 0) {
-      sembunyikanGalatWizard();
-      state.stepIndex--;
-      renderLangkahWizard();
-    }
-  }
-
-  async function langkahBerikutnya() {
-    var galat = validasiLangkahSaatIni();
-    if (galat) {
-      tampilkanGalatWizard(galat);
-      return;
-    }
-
-    sembunyikanGalatWizard();
-    var langkahList = dapatkanDaftarLangkah();
-    if (state.stepIndex < langkahList.length - 1) {
-      state.stepIndex++;
-      renderLangkahWizard();
-      return;
-    }
-
-    // Langkah terakhir: Kirim ke Server
-    await kirimCeritaKeServer();
-  }
-
-  async function kirimCeritaKeServer() {
-    var btnNext = document.getElementById('btn-step-next');
-    var btnPrev = document.getElementById('btn-step-prev');
-    btnNext.disabled = true;
-    btnPrev.disabled = true;
-    btnNext.textContent = 'Sedang Mengirim...';
-
-    try {
-      var payload = {
-        anonim: state.form.anonim === true,
-        jenjang: state.form.jenjang,
-        kelas: state.form.anonim === false ? state.form.kelas.trim() : '',
-        nama: state.form.anonim === false ? state.form.nama.trim() : '',
-        kategoriId: state.form.kategoriId,
-        urgensi: state.form.urgensi,
-        guruTujuanId: state.form.guruTujuanId,
-        pesan: state.form.pesan.trim(),
-        preferensiBalasan: state.form.preferensiBalasan,
-        website: document.getElementById('hp-website').value,
-        waktuMulai: state.waktuMulaiForm
+  // Kompres gambar: ubah ukuran ke maks MAKS_LEBAR_GAMBAR, konversi ke JPEG
+  function kompresGambar(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          let lebar = img.width;
+          let tinggi = img.height;
+          if (lebar > MAKS_LEBAR_GAMBAR) {
+            tinggi = Math.round(tinggi * (MAKS_LEBAR_GAMBAR / lebar));
+            lebar = MAKS_LEBAR_GAMBAR;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = lebar;
+          canvas.height = tinggi;
+          const ctx = canvas.getContext('2d');
+          // Latar putih untuk PNG transparan (agar JPEG tidak hitam)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, lebar, tinggi);
+          ctx.drawImage(img, 0, 0, lebar, tinggi);
+          const dataUrl = canvas.toDataURL('image/jpeg', KUALITAS_GAMBAR);
+          // Cek ukuran hasil (estimasi dari panjang base64)
+          const ukuranEstimasi = Math.floor((dataUrl.split(',')[1] || '').length * 3 / 4);
+          if (ukuranEstimasi > MAKS_UKURAN_LAMPIRAN) {
+            // Jika masih terlalu besar, coba kualitas lebih rendah
+            const dataUrlKecil = canvas.toDataURL('image/jpeg', 0.4);
+            const ukuranKecil = Math.floor((dataUrlKecil.split(',')[1] || '').length * 3 / 4);
+            if (ukuranKecil > MAKS_UKURAN_LAMPIRAN) {
+              resolve(null);
+              return;
+            }
+            resolve({
+              nama: gantiEkstensi(file.name, 'jpg'),
+              tipe: 'image/jpeg',
+              data: dataUrlKecil,
+              ukuran: ukuranKecil
+            });
+            return;
+          }
+          resolve({
+            nama: gantiEkstensi(file.name, 'jpg'),
+            tipe: 'image/jpeg',
+            data: dataUrl,
+            ukuran: ukuranEstimasi
+          });
+        };
+        img.onerror = function () { reject(new Error('Gagal memuat gambar')); };
+        img.src = e.target.result;
       };
-
-      var hasil = await panggilApi('kirimCurhat', payload);
-      state.terakhirKodeTiket = hasil.kodeTiket || '';
-
-      document.getElementById('result-ticket-code').textContent = state.terakhirKodeTiket;
-
-      var emergencyBox = document.getElementById('success-emergency-box');
-      if (hasil.terdeteksiBahaya) {
-        document.getElementById('success-emergency-contacts').textContent =
-          hasil.kontakDarurat || ((state.publicData.pengaturan && state.publicData.pengaturan.kontakDarurat) || '');
-        emergencyBox.classList.remove('hidden');
-      } else {
-        emergencyBox.classList.add('hidden');
-      }
-
-      tampilkanElemen('curhat-wizard-card', false);
-      tampilkanElemen('curhat-success-card', true);
-      state.waktuMulaiForm = 0;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      tampilkanGalatWizard(err.message || 'Gagal mengirim cerita. Silakan coba lagi.');
-    } finally {
-      btnNext.disabled = false;
-      btnPrev.disabled = false;
-      btnNext.textContent = 'Kirim Ceritaku Sekarang';
-    }
+      reader.onerror = function () { reject(new Error('Gagal membaca file')); };
+      reader.readAsDataURL(file);
+    });
   }
 
-  // ==========================================================================
-  // CEK BALASAN GURU BK
-  // ==========================================================================
+  // Baca dokumen PDF sebagai data URI
+  function bacaDokumen(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        resolve({
+          nama: file.name,
+          tipe: file.type || 'application/pdf',
+          data: e.target.result,
+          ukuran: file.size
+        });
+      };
+      reader.onerror = function () { reject(new Error('Gagal membaca file')); };
+      reader.readAsDataURL(file);
+    });
+  }
 
-  async function tanganiCekBalasan(e) {
-    e.preventDefault();
+  // Ganti ekstensi nama file
+  function gantiEkstensi(nama, ekstensiBaru) {
+    const idx = nama.lastIndexOf('.');
+    const basis = idx !== -1 ? nama.slice(0, idx) : nama;
+    return basis + '.' + ekstensiBaru;
+  }
 
-    var input = document.getElementById('input-kode-tiket');
-    var errBox = document.getElementById('cek-error-box');
-    var btn = document.getElementById('btn-submit-cek');
+  // Format ukuran file untuk tampilan
+  function formatUkuran(byte) {
+    if (byte < 1024) return byte + ' B';
+    if (byte < 1024 * 1024) return Math.round(byte / 1024) + ' KB';
+    return (byte / (1024 * 1024)).toFixed(1) + ' MB';
+  }
 
-    var kodeBersih = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    errBox.classList.add('hidden');
+  // Tampilkan daftar lampiran yang sudah diproses
+  function renderDaftarLampiran() {
+    const wadah = document.getElementById('daftar-lampiran');
+    if (lampiranTerpilih.length === 0) {
+      wadah.innerHTML = '';
+      return;
+    }
+    wadah.innerHTML = '';
+    lampiranTerpilih.forEach(function (f, idx) {
+      const el = document.createElement('div');
+      el.className = 'item-lampiran';
+      const isGambar = f.tipe.indexOf('image/') !== -1;
+      let pratinjauHtml;
+      if (isGambar) {
+        pratinjauHtml = '<img class="pratinjau-lampiran" src="' + escapeAttr(f.data) + '" alt="">';
+      } else {
+        pratinjauHtml = '<div class="pratinjau-lampiran-placeholder" aria-hidden="true">&#128196;</div>';
+      }
+      el.innerHTML = pratinjauHtml +
+        '<div class="info-lampiran"><div class="nama-lampiran">' + escapeHtml(f.nama) + '</div>' +
+        '<div class="ukuran-lampiran">' + formatUkuran(f.ukuran) + '</div></div>' +
+        '<button type="button" class="btn-hapus-lampiran" data-idx="' + idx + '" title="Hapus" aria-label="Hapus lampiran">&times;</button>';
+      wadah.appendChild(el);
+    });
+    // Pasang event hapus
+    wadah.querySelectorAll('.btn-hapus-lampiran').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const idx = Number(btn.dataset.idx);
+        lampiranTerpilih.splice(idx, 1);
+        renderDaftarLampiran();
+      });
+    });
+  }
 
-    if (kodeBersih.length !== 10) {
-      errBox.textContent = 'Kode tiket harus terdiri dari 10 karakter huruf dan angka.';
-      errBox.classList.remove('hidden');
+  // ===== Ringkasan =====
+
+  function perbaruiRingkasan() {
+    const wadah = document.getElementById('ringkasan-kiriman');
+    const data = kumpulDataForm();
+    const baris = [];
+
+    baris.push(['Mode', data.anonim ? 'Anonim' : 'Beridentitas']);
+    baris.push(['Jenjang', 'Kelas ' + data.jenjang]);
+    if (!data.anonim) {
+      baris.push(['Kelas', data.kelas || '-']);
+      baris.push(['Nama', data.nama || '-']);
+      if (data.noHP) baris.push(['No. HP', data.noHP]);
+    }
+    const kat = (dataPublik.kategori || []).find(function (k) { return k.ID === data.kategoriID; });
+    baris.push(['Kategori', kat ? kat.Nama : data.kategoriID]);
+    const labelUrgensi = { rendah: 'Rendah', sedang: 'Sedang', tinggi: 'Tinggi' };
+    baris.push(['Urgensi', labelUrgensi[data.urgensi] || data.urgensi]);
+
+    if (data.guruTujuanID && data.guruTujuanID !== 'Siapa saja') {
+      const guru = (dataPublik.guru || []).find(function (g) { return g.ID === data.guruTujuanID; });
+      baris.push(['Guru Tujuan', guru ? guru.Nama : data.guruTujuanID]);
+    } else {
+      baris.push(['Guru Tujuan', 'Siapa Saja']);
+    }
+
+    baris.push(['Preferensi Balasan', data.preferensiBalasan === 'website' ? 'Lewat Website' : 'Bertemu Langsung']);
+
+    let html = '';
+    baris.forEach(function (b) {
+      html += '<div class="baris-ringkasan"><span class="label-ringkasan">' + escapeHtml(b[0]) + '</span>' +
+        '<span class="nilai-ringkasan">' + escapeHtml(b[1]) + '</span></div>';
+    });
+    html += '<div class="baris-ringkasan"><span class="label-ringkasan">Pesan</span>' +
+      '<span class="nilai-ringkasan">' + escapeHtml(data.pesan.slice(0, 120)) + (data.pesan.length > 120 ? '...' : '') + '</span></div>';
+    if (lampiranTerpilih.length > 0) {
+      const namaFile = lampiranTerpilih.map(function (f) { return f.nama; }).join(', ');
+      const teksLampiran = lampiranTerpilih.length + ' file: ' + namaFile;
+      html += '<div class="baris-ringkasan"><span class="label-ringkasan">Lampiran</span>' +
+        '<span class="nilai-ringkasan">' + escapeHtml(teksLampiran) + '</span></div>';
+    }
+    wadah.innerHTML = html;
+  }
+
+  function kumpulDataForm() {
+    const form = document.getElementById('form-curhat');
+    const anonimRadio = form.querySelector('input[name="anonim"]:checked');
+    const jenjangRadio = form.querySelector('input[name="jenjang"]:checked');
+    const kategoriRadio = form.querySelector('input[name="kategoriID"]:checked');
+    const urgensiRadio = form.querySelector('input[name="urgensi"]:checked');
+    const guruRadio = form.querySelector('input[name="guruTujuanID"]:checked');
+    const prefRadio = form.querySelector('input[name="preferensiBalasan"]:checked');
+
+    return {
+      anonim: anonimRadio ? anonimRadio.value === 'true' : false,
+      jenjang: jenjangRadio ? jenjangRadio.value : '',
+      kelas: form.querySelector('#input-kelas').value,
+      nama: form.querySelector('#input-nama').value.trim(),
+      noHP: form.querySelector('#input-nohp') ? form.querySelector('#input-nohp').value.trim() : '',
+      kategoriID: kategoriRadio ? kategoriRadio.value : '',
+      urgensi: urgensiRadio ? urgensiRadio.value : '',
+      guruTujuanID: guruRadio ? guruRadio.value : 'Siapa saja',
+      pesan: form.querySelector('#input-pesan').value.trim(),
+      preferensiBalasan: prefRadio ? prefRadio.value : '',
+      mulai: form.querySelector('#input-mulai').value,
+      website: form.querySelector('input[name="website"]').value
+    };
+  }
+
+  // ===== Kirim Curhatan =====
+
+  async function kirimCurhatan() {
+    const data = kumpulDataForm();
+    // Validasi akhir
+    if (!data.jenjang || !data.kategoriID || !data.urgensi || !data.pesan || !data.preferensiBalasan) {
+      tampilkanToast('Ada isian yang belum lengkap. Periksa kembali.', 'error');
+      return;
+    }
+    if (!data.anonim && (!data.kelas || !data.nama)) {
+      tampilkanToast('Nama dan kelas harus diisi untuk mode beridentitas.', 'error');
       return;
     }
 
-    btn.disabled = true;
-    btn.textContent = 'Memeriksa Kode...';
-
+    tampilkanMemuat(true);
     try {
-      var data = await panggilApi('cekBalasan', { kodeTiket: kodeBersih });
-      renderHasilCekBalasan(data);
-    } catch (err) {
-      tampilkanElemen('cek-result-card', false);
-      errBox.textContent = err.message || 'Kode tiket tidak ditemukan.';
-      errBox.classList.remove('hidden');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Lihat Status & Balasan';
-    }
-  }
-
-  function renderHasilCekBalasan(data) {
-    var statusMap = {
-      Baru: { label: 'Menunggu Dibaca', cls: 'badge-baru', desc: 'Pesanmu sudah masuk ke sistem BK dan menunggu dibaca oleh Guru BK.' },
-      Dibaca: { label: 'Sudah Dibaca', cls: 'badge-dibaca', desc: 'Guru BK sudah membaca ceritamu dan sedang menyiapkan tanggapan.' },
-      Ditangani: { label: 'Sedang Ditangani', cls: 'badge-ditangani', desc: 'Guru BK sedang menindaklanjuti atau membalas ceritamu.' },
-      Selesai: { label: 'Selesai', cls: 'badge-selesai', desc: 'Sesi pendampingan untuk tiket ini telah ditandai selesai.' },
-      Dirujuk: { label: 'Diteruskan / Dirujuk', cls: 'badge-dirujuk', desc: 'Ceritamu telah diteruskan kepada guru/pihak pendamping yang tepat.' }
-    };
-
-    var infoStatus = statusMap[data.status] || { label: data.status, cls: 'badge-baru', desc: '' };
-    var badge = document.getElementById('cek-status-badge');
-    badge.className = 'badge ' + infoStatus.cls;
-    badge.textContent = infoStatus.label;
-
-    document.getElementById('cek-status-desc').textContent = infoStatus.desc;
-    document.getElementById('cek-waktu').textContent = formatWaktuIndonesia(data.waktu);
-    document.getElementById('cek-topik-guru').textContent = data.kategoriNama + ' • Tujuan: ' + data.guruTujuanNama;
-    document.getElementById('cek-preferensi').textContent =
-      data.preferensiBalasan === 'Website' ? 'Dibalas lewat website' : 'Bertemu langsung di ruang BK';
-
-    var thread = document.getElementById('cek-thread');
-    thread.innerHTML = '';
-
-    // Pesan awal siswa
-    var bubbleSiswa = document.createElement('div');
-    bubbleSiswa.className = 'bubble-student';
-    var metaSiswa = document.createElement('div');
-    metaSiswa.className = 'bubble-meta';
-    metaSiswa.textContent = 'Ceritamu • ' + formatWaktuIndonesia(data.waktu);
-    var bodySiswa = document.createElement('p');
-    bodySiswa.className = 'bubble-body';
-    bodySiswa.textContent = data.pesanSiswa;
-    bubbleSiswa.appendChild(metaSiswa);
-    bubbleSiswa.appendChild(bodySiswa);
-    thread.appendChild(bubbleSiswa);
-
-    // Balasan dari Guru BK
-    var balasanList = data.balasan || [];
-    if (balasanList.length === 0) {
-      var kosong = document.createElement('div');
-      kosong.className = 'alert-box alert-info';
-      kosong.style.marginTop = '0.5rem';
-      kosong.textContent = 'Belum ada balasan tertulis dari Guru BK. Silakan cek kembali secara berkala menggunakan Kode Tiketmu.';
-      thread.appendChild(kosong);
-    } else {
-      for (var i = 0; i < balasanList.length; i++) {
-        var b = balasanList[i];
-        var bubbleGuru = document.createElement('div');
-        bubbleGuru.className = 'bubble-teacher';
-        var metaGuru = document.createElement('div');
-        metaGuru.className = 'bubble-meta';
-        metaGuru.textContent = 'Balasan Guru BK • ' + formatWaktuIndonesia(b.waktu);
-        var bodyGuru = document.createElement('p');
-        bodyGuru.className = 'bubble-body';
-        bodyGuru.textContent = b.pesan;
-        bubbleGuru.appendChild(metaGuru);
-        bubbleGuru.appendChild(bodyGuru);
-        thread.appendChild(bubbleGuru);
+      // Siapkan data lampiran (hanya nama, tipe, data — tanpa ukuran)
+      const lampiranPayload = lampiranTerpilih.map(function (f) {
+        return { nama: f.nama, tipe: f.tipe, data: f.data };
+      });
+      const resp = await panggilAPI('kirimKiriman', {
+        anonim: data.anonim,
+        jenjang: data.jenjang,
+        kelas: data.kelas,
+        nama: data.nama,
+        noHP: data.noHP,
+        kategoriID: data.kategoriID,
+        urgensi: data.urgensi,
+        guruTujuanID: data.guruTujuanID,
+        pesan: data.pesan,
+        preferensiBalasan: data.preferensiBalasan,
+        mulai: data.mulai,
+        website: data.website,
+        lampiran: lampiranPayload
+      });
+      if (resp.ok && resp.data && resp.data.kode) {
+        tampilkanHasilKirim(resp.data.kode, resp.data.bahaya);
+      } else {
+        console.error('[BK] Kirim ditolak server:', resp);
+        tampilkanToast(resp.error || 'Gagal mengirim. Jalankan Tes Koneksi di beranda.', 'error');
       }
+    } catch (e) {
+      console.error('[BK] Kirim error:', e);
+      tampilkanToast('Tidak bisa terhubung ke server. ' + String(e.message || e).slice(0, 80) + ' Buka Tes Koneksi di beranda.', 'error');
     }
-
-    tampilkanElemen('cek-result-card', true);
+    tampilkanMemuat(false);
   }
 
-  // ==========================================================================
-  // UTILITAS UI & KEAMANAN DOM
-  // ==========================================================================
+  function tampilkanHasilKirim(kode, bahaya) {
+    // Sembunyikan form, tampilkan hasil
+    document.querySelector('.form-kontainer').style.display = 'none';
+    const hasil = document.getElementById('hasil-kirim');
+    hasil.hidden = false;
+    setText('kode-tiket-nilai', kode);
 
-  function buatJudulLangkah(judul, petunjuk) {
-    var wrap = document.createElement('div');
-    var h2 = document.createElement('h2');
-    h2.className = 'step-title';
-    h2.textContent = judul;
-    var p = document.createElement('p');
-    p.className = 'step-hint';
-    p.textContent = petunjuk;
-    wrap.appendChild(h2);
-    wrap.appendChild(p);
-    return wrap;
-  }
-
-  function buatKartuPilihan(terpilih, judul, subJudul, onClick) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'choice-card' + (terpilih ? ' selected' : '');
-    btn.setAttribute('aria-pressed', terpilih ? 'true' : 'false');
-
-    var dot = document.createElement('span');
-    dot.className = 'choice-radio-dot';
-    dot.setAttribute('aria-hidden', 'true');
-
-    var content = document.createElement('span');
-    content.className = 'choice-content';
-
-    var titleEl = document.createElement('span');
-    titleEl.className = 'choice-title';
-    titleEl.textContent = judul;
-    content.appendChild(titleEl);
-
-    if (subJudul) {
-      var subEl = document.createElement('span');
-      subEl.className = 'choice-sub';
-      subEl.textContent = subJudul;
-      content.appendChild(subEl);
-    }
-
-    btn.appendChild(dot);
-    btn.appendChild(content);
-    btn.addEventListener('click', onClick);
-    return btn;
-  }
-
-  function tampilkanElemen(id, tampil) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    if (tampil) {
-      el.classList.remove('hidden');
+    // Tampilkan peringatan bahaya jika ada
+    const peringatanHasil = document.getElementById('peringatan-bahaya-hasil');
+    if (bahaya && dataPublik.pengaturan.kontakDarurat) {
+      peringatanHasil.hidden = false;
+      peringatanHasil.innerHTML = '<p class="judul-peringatan">Kami peduli padamu</p>' +
+        '<p>Terdengar kamu sedang menghadapi hal yang sangat berat. Pesanmu telah ditandai penting dan guru BK akan segera memberi perhatian. Jika butuh bantuan segera, hubungi kontak darurat di bawah ini:</p>' +
+        '<div class="kontak-darurat-cepat">' + escapeHtml(dataPublik.pengaturan.kontakDarurat) + '</div>';
     } else {
-      el.classList.add('hidden');
+      peringatanHasil.hidden = true;
     }
+
+    hasil.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function tampilkanGalatWizard(pesan) {
-    var box = document.getElementById('wizard-alert');
-    box.textContent = pesan;
-    box.classList.remove('hidden');
+  function resetForm() {
+    document.getElementById('form-curhat').reset();
+    document.getElementById('input-mulai').value = '';
+    document.querySelector('.form-kontainer').style.display = '';
+    document.getElementById('hasil-kirim').hidden = true;
+    document.getElementById('peringatan-bahaya').hidden = true;
+    document.getElementById('daftar-lampiran').innerHTML = '';
+    lampiranTerpilih = [];
+    setText('hitung-pesan', '0');
+    langkahSaatIni = 1;
+    modeAnonim = null;
+    tampilkanLangkah(1);
   }
 
-  function sembunyikanGalatWizard() {
-    var box = document.getElementById('wizard-alert');
-    box.classList.add('hidden');
-  }
+  // ===== Cek Balasan =====
 
-  function ambilInisial(nama) {
-    var bagian = String(nama || 'BK').trim().split(/\s+/);
-    if (bagian.length === 1) {
-      return bagian[0].slice(0, 2).toUpperCase();
+  async function cekBalasan() {
+    const kode = document.getElementById('input-kode').value.trim().toUpperCase();
+    const wadah = document.getElementById('hasil-cek');
+
+    if (!kode || kode.length !== 10) {
+      wadah.innerHTML = '<div class="keadaan-kosong" style="border-color:var(--bahaya-tepi);color:var(--bahaya)">Kode tiket harus 10 karakter.</div>';
+      return;
     }
-    return (bagian[0].charAt(0) + bagian[1].charAt(0)).toUpperCase();
+
+    tampilkanMemuat(true);
+    try {
+      const resp = await panggilAPI('cekBalasan', { kode: kode });
+      if (resp.ok && resp.data) {
+        renderHasilCek(resp.data);
+      } else {
+        wadah.innerHTML = '<div class="keadaan-kosong" style="border-color:var(--bahaya-tepi);color:var(--bahaya)">' +
+          escapeHtml(resp.error || 'Kode tidak ditemukan.') + '</div>';
+      }
+    } catch (e) {
+      wadah.innerHTML = '<div class="keadaan-kosong" style="border-color:var(--bahaya-tepi);color:var(--bahaya)">Tidak bisa terhubung ke server. Coba lagi.</div>';
+    }
+    tampilkanMemuat(false);
   }
 
-  function formatWaktuIndonesia(isoStr) {
-    if (!isoStr) return '-';
-    var d = new Date(isoStr);
-    if (isNaN(d.getTime())) return String(isoStr);
-    return d.toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }) + ' WIB';
+  function renderHasilCek(data) {
+    const wadah = document.getElementById('hasil-cek');
+    const statusInfo = LABEL_STATUS[data.status] || { teks: data.status, kelas: 'baru' };
+    const balasan = data.balasan || [];
+
+    let html = '<div class="kartu-status">' +
+      '<div class="baris-status">' +
+      '<span class="label-status">Status:</span>' +
+      '<span class="badge-status ' + statusInfo.kelas + '">' + escapeHtml(statusInfo.teks) + '</span>' +
+      '</div>' +
+      '<div class="waktu-kiriman">Dikirim: ' + formatTanggal(data.waktu) + '</div>' +
+      '</div>';
+
+    if (balasan.length > 0) {
+      html += '<h3 style="margin:16px 0 12px;font-size:18px">Balasan dari Guru BK:</h3>';
+      html += '<div class="daftar-balasan">';
+      balasan.forEach(function (b) {
+        html += '<div class="item-balasan">' +
+          '<div class="waktu-balasan">' + formatTanggal(b.waktu) + '</div>' +
+          '<div class="isi-balasan">' + escapeHtml(b.pesan) + '</div>' +
+          '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="belum-dibalas">' +
+        '<p>&#9203;&#65039; Belum ada balasan.</p>' +
+        '<p style="margin-top:8px">Guru BK akan membalas secepatnya. Cek lagi nanti dengan kode tiket yang sama.</p>' +
+        '</div>';
+    }
+
+    wadah.innerHTML = html;
+  }
+
+  // ===== Utility =====
+
+  function tampilkanMemuat(tampilkan) {
+    document.getElementById('overlay-memuat').hidden = !tampilkan;
+  }
+
+  function tampilkanToast(pesan, tipe) {
+    const toast = document.getElementById('toast');
+    toast.textContent = pesan;
+    toast.className = 'toast' + (tipe ? ' ' + tipe : '');
+    toast.hidden = false;
+    // Error dan peringatan tampil lebih lama agar bisa dibaca
+    const durasi = (tipe === 'error' || tipe === 'peringatan') ? 6000 : 3500;
+    setTimeout(function () {
+      toast.hidden = true;
+    }, durasi);
+  }
+
+  function tampilkanError(pesan) {
+    const toast = document.getElementById('toast');
+    toast.textContent = pesan;
+    toast.className = 'toast error';
+    toast.hidden = false;
+    setTimeout(function () {
+      toast.hidden = true;
+    }, 6000);
+  }
+
+  function setText(id, teks) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = teks;
   }
 
   function salinTeks(teks) {
-    if (!teks) return;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(teks).then(function () {
-        tampilkanToast('Kode tiket berhasil disalin!');
+        tampilkanToast('Kode berhasil disalin!', 'sukses');
       }).catch(function () {
-        salinFallback(teks);
+        salinCadangan(teks);
       });
     } else {
-      salinFallback(teks);
+      salinCadangan(teks);
     }
   }
 
-  function salinFallback(teks) {
-    var temp = document.createElement('textarea');
-    temp.value = teks;
-    temp.setAttribute('readonly', '');
-    temp.style.position = 'fixed';
-    temp.style.opacity = '0';
-    document.body.appendChild(temp);
-    temp.select();
+  function salinCadangan(teks) {
+    const ta = document.createElement('textarea');
+    ta.value = teks;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
     try {
       document.execCommand('copy');
-      tampilkanToast('Kode tiket berhasil disalin!');
+      tampilkanToast('Kode berhasil disalin!', 'sukses');
     } catch (e) {
-      tampilkanToast('Silakan pilih dan salin kode tiket secara manual.');
+      tampilkanToast('Tidak bisa menyalin otomatis. Tolong salin manual.', 'peringatan');
     }
-    document.body.removeChild(temp);
+    document.body.removeChild(ta);
   }
 
-  var timerToast = null;
-  function tampilkanToast(pesan) {
-    var el = document.getElementById('toast-notification');
-    if (!el) return;
-    el.textContent = pesan;
-    el.classList.remove('hidden');
-    if (timerToast) clearTimeout(timerToast);
-    timerToast = setTimeout(function () {
-      el.classList.add('hidden');
-    }, 3000);
+  function formatTanggal(iso) {
+    try {
+      const d = new Date(iso);
+      const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      return hari[d.getDay()] + ', ' + d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear() +
+        ' pukul ' + ('0' + d.getHours()).slice(-2) + '.' + ('0' + d.getMinutes()).slice(-2);
+    } catch (e) {
+      return String(iso);
+    }
   }
+
+  function isAktif(v) {
+    return v === true || v === 'TRUE' || v === 'True' || v === 'true' || v === 1 || v === '1';
+  }
+
+  function guruCocokJenjang(guru, jenjang) {
+    if (!guru.Jenjang) return true;
+    const daftar = String(guru.Jenjang).split(',').map(function (s) { return s.trim(); });
+    return daftar.indexOf(jenjang) !== -1;
+  }
+
+  // Escape HTML untuk mencegah XSS saat menampilkan data
+  function escapeHtml(teks) {
+    if (teks === null || teks === undefined) return '';
+    return String(teks)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function escapeAttr(teks) {
+    return escapeHtml(teks);
+  }
+
+  // Tangani error yang tidak tertangkap
+  window.addEventListener('unhandledrejection', function (e) {
+    console.error('[BK] Unhandled rejection:', e.reason);
+  });
+
+  // Expose fungsi tes koneksi agar bisa dipanggil dari Console browser (F12)
+  window.tesKoneksiBK = tesKoneksiServer;
+
 })();
