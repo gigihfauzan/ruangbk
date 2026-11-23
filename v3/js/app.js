@@ -1505,11 +1505,39 @@
     s = s.replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
     // Hapus javascript: di href/src
     s = s.replace(/(href|src)\s*=\s*"javascript:[^"]*"/gi, '$1="#"');
-    s = s.replace(/(href|src)\s*=\s*'javascript:[[^']*'/gi, "$1='#'");
-    // Hapus tag berbahaya
-    s = s.replace(/<\/?(iframe|object|embed|form|input|button|textarea|select|option|script|style|meta|link|base|frame|frameset|applet)\b[^>]*>/gi, '');
+    // Hapus tag berbahaya (KECUALI iframe dan img — ditangani khusus di bawah)
+    s = s.replace(/<\/?(object|embed|form|input|button|textarea|select|option|script|style|meta|link|base|frame|frameset|applet)\b[^>]*>/gi, '');
+    // Iframe: hanya izinkan YouTube embed, hapus yang lain
+    // Tangani iframe lengkap (opening + content + closing)
+    s = s.replace(/<iframe\b[^>]*>([\s\S]*?)<\/iframe>/gi, function (match) {
+      var srcMatch = match.match(/src\s*=\s*["']([^"']*)["']/i);
+      var src = srcMatch ? srcMatch[1] : '';
+      if (src.indexOf('youtube.com/embed/') !== -1 || src.indexOf('youtube-nocookie.com/embed/') !== -1) {
+        return '<iframe src="' + src + '" width="100%" height="315" frameborder="0" allowfullscreen loading="lazy" style="border-radius:8px;margin:12px 0"></iframe>';
+      }
+      return '';
+    });
+    // Hapus iframe orphaned yang BUKAN YouTube (jangan hapus YouTube yang sudah dibersihkan)
+    s = s.replace(/<iframe\b[^>]*>/gi, function (match) {
+      var srcMatch = match.match(/src\s*=\s*["']([^"']*)["']/i);
+      var src = srcMatch ? srcMatch[1] : '';
+      if (src.indexOf('youtube.com/embed/') !== -1 || src.indexOf('youtube-nocookie.com/embed/') !== -1) {
+        return match;
+      }
+      return '';
+    });
+    // Img: pastikan src aman (http/https/data:image), bersihkan atribut lain
+    s = s.replace(/<img\b[^>]*>/gi, function (match) {
+      var srcMatch = match.match(/src\s*=\s*["']([^"']*)["']/i);
+      var src = srcMatch ? srcMatch[1] : '';
+      if (!src) return '';
+      if (src.indexOf('http') !== 0 && src.indexOf('data:image') !== 0) return '';
+      var altMatch = match.match(/alt\s*=\s*["']([^"']*)["']/i);
+      var alt = altMatch ? altMatch[1] : '';
+      return '<img src="' + src + '" alt="' + alt + '" loading="lazy" style="max-width:100%;height:auto;border-radius:8px;margin:12px 0" />';
+    });
     // Pastikan link membuka di tab baru
-    s = s.replace(/<a\b/gi, '<a target="_blank" rel="noopener noreferrer"');
+    s = s.replace(/<a\b(?!\s*target=)/gi, '<a target="_blank" rel="noopener noreferrer"');
     return s;
   }
 

@@ -1351,6 +1351,7 @@
             '<span class="pemisah-toolbar"></span>' +
             '<button type="button" data-cmd="formatBlock" data-val="blockquote" title="Kutipan" aria-label="Kutipan">&#8220; Quote</button>' +
             '<button type="button" data-cmd="createLink" title="Sisipkan Tautan" aria-label="Tautan">&#128279; Link</button>' +
+            '<button type="button" data-cmd="createMedia" title="Sisipkan Media (Video/Gambar)" aria-label="Media">&#127916; Media</button>' +
             '<button type="button" data-cmd="removeFormat" title="Hapus Format" aria-label="Hapus Format">&#10005;</button>' +
           '</div>' +
           '<div class="area-editor" id="' + editorId + '" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Tulis isi materi di sini... Gunakan toolbar di atas untuk memformat teks (tebal, miring, judul, daftar, kutipan, tautan)."></div>' +
@@ -1372,6 +1373,24 @@
       hiddenKonten.value = areaEditor.innerHTML;
     });
 
+    // Enter di dalam blockquote/list: keluar ke paragraf normal
+    areaEditor.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        var sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+          var node = sel.anchorNode;
+          while (node && node !== areaEditor) {
+            if (node.nodeName === 'BLOCKQUOTE') {
+              e.preventDefault();
+              document.execCommand('formatBlock', false, 'p');
+              return;
+            }
+            node = node.parentNode;
+          }
+        }
+      }
+    });
+
     // Handler tombol toolbar
     el.querySelectorAll('.toolbar-editor button').forEach(function (btn) {
       btn.addEventListener('mousedown', function (e) {
@@ -1383,6 +1402,8 @@
           if (url && url.trim()) {
             document.execCommand('createLink', false, url.trim());
           }
+        } else if (cmd === 'createMedia') {
+          sisipkanMedia(areaEditor);
         } else if (val) {
           document.execCommand(cmd, false, val);
         } else {
@@ -1394,6 +1415,35 @@
 
     el.querySelector('.btn-hapus-editor').addEventListener('click', function () { el.remove(); });
     return el;
+  }
+
+  // Sisipkan media (YouTube/gambar/link) ke editor materi
+  function sisipkanMedia(areaEditor) {
+    const url = prompt('Masukkan URL:\n- YouTube (video)\n- Gambar (.jpg, .png, .gif)\n- Tautan lainnya', 'https://');
+    if (!url || !url.trim()) return;
+    const u = url.trim();
+    // Deteksi YouTube
+    var ytMatch = u.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+    if (ytMatch) {
+      var videoId = ytMatch[1];
+      document.execCommand('insertHTML', false,
+        '<iframe src="https://www.youtube.com/embed/' + videoId + '" width="100%" height="315" frameborder="0" allowfullscreen loading="lazy"></iframe><p><br></p>');
+      tampilkanToast('Video YouTube disisipkan.', 'sukses');
+      return;
+    }
+    // Deteksi gambar
+    if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(u)) {
+      document.execCommand('insertHTML', false,
+        '<img src="' + u + '" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0" /><p><br></p>');
+      tampilkanToast('Gambar disisipkan.', 'sukses');
+      return;
+    }
+    // Tautan biasa
+    var teksTerpilih = window.getSelection().toString();
+    if (!teksTerpilih) teksTerpilih = u;
+    document.execCommand('insertHTML', false,
+      '<a href="' + u + '" target="_blank" rel="noopener noreferrer">' + teksTerpilih + '</a>');
+    tampilkanToast('Tautan disisipkan.', 'sukses');
   }
 
   function tambahMateri() {

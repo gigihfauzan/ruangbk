@@ -3421,3 +3421,54 @@ body {
 .konten-materi em {
   font-style: italic;
 }
+
+/* ===== Embedded Media di Konten Materi (Siswa) ===== */
+
+.konten-materi iframe {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+  border: 1px solid var(--batas);
+  display: block;
+}
+
+.konten-materi img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+  border: 1px solid var(--batas);
+}
+
+/* Responsive: video iframe 100% lebar di mobile */
+@media (max-width: 600px) {
+  .konten-materi iframe {
+    max-width: 100%;
+  }
+}
+
+/* ===== Embedded Media di Editor (Admin) ===== */
+
+.area-editor iframe {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+  border: 1px solid var(--batas);
+  display: block;
+}
+
+.area-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+  display: block;
+  border: 1px solid var(--batas);
+}
