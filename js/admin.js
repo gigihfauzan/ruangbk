@@ -127,6 +127,7 @@
       if (resp.ok && resp.data) {
         daftarKirimanSaatIni = resp.data;
         renderTabelKiriman(resp.data);
+        tambahFilterTahunAjaran(resp.data);
       } else {
         if (resp.error && resp.error.indexOf('Sesi') !== -1) {
           logout();
@@ -486,6 +487,34 @@
     selGuru.innerHTML = '<option value="">Semua</option><option value="Siapa saja">Siapa Saja</option>' + guru.map(function (g) {
       return '<option value="' + escapeAttr(g.ID) + '">' + escapeHtml(g.Nama) + '</option>';
     }).join('');
+    // Tahun Ajaran — dari pengaturan aktif
+    const selTA = document.getElementById('filter-ta');
+    const taAktif = dataPengaturan.pengaturan ? dataPengaturan.pengaturan.tahunAjaranAktif : '';
+    if (taAktif) {
+      selTA.innerHTML = '<option value="">Semua</option><option value="' + escapeAttr(taAktif) + '">' + escapeHtml(taAktif) + ' (aktif)</option>';
+    } else {
+      selTA.innerHTML = '<option value="">Semua</option>';
+    }
+  }
+
+  // Tambah opsi tahun ajaran dari data kiriman yang dimuat
+  function tambahFilterTahunAjaran(daftarKiriman) {
+    const selTA = document.getElementById('filter-ta');
+    if (!selTA) return;
+    var existing = {};
+    Array.from(selTA.options).forEach(function (opt) {
+      if (opt.value) existing[opt.value] = true;
+    });
+    (daftarKiriman || []).forEach(function (k) {
+      var ta = String(k.TahunAjaran || '').trim();
+      if (ta && !existing[ta]) {
+        existing[ta] = true;
+        var opt = document.createElement('option');
+        opt.value = ta;
+        opt.textContent = ta;
+        selTA.appendChild(opt);
+      }
+    });
   }
 
   // ===== Simpan Pengaturan (per bagian) =====
